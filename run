@@ -1,0 +1,4 @@
+#!/bin/bash
+
+javac Crawler.java
+java -cp ./mysql-connector-java-5.1.15-bin.jar: Crawler
