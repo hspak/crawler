@@ -1,4 +1,3 @@
-
 ------------------------
 CS390 Web Crawler Project
 Computer Science Department
@@ -21,3 +20,8 @@ Open a Windows Command Prompt Window and type
 compile.bat
 run.bat
 
+=======
+CS390-JAVA
+
+Use this directory to add the sources of
+your Web Crawler and Search Engine to GIT
