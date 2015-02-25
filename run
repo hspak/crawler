@@ -1,5 +1,8 @@
 #!/bin/bash
 
 # javac Crawler.java
-javac -cp './commons-cli.jar' Crawler.java
-java -cp './mysql-connector-java-3.1.15-bin.jar' Crawler "$@"
+echo "Compiling..."
+# javac -cp './commons-cli.jar' Crawler.java
+javac -cp '.:./commons-cli.jar:./mysql-connector-java-3.1.15-bin.jar:./mariadb-java-client-1.1.8.jar:' Crawler.java
+echo "Running..."
+java -cp '.:./commons-cli.jar:./mysql-connector-java-3.1.15-bin.jar:./mariadb-java-client-1.1.8.jar:' Crawler "$@"

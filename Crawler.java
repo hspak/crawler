@@ -31,7 +31,7 @@ public class Crawler
         String url = props.getProperty("jdbc.url");
         String username = props.getProperty("jdbc.username");
         String password = props.getProperty("jdbc.password");
-        connection = DriverManager.getConnection( url, username, password );
+        connection = DriverManager.getConnection(url, username, password);
     }
 
     public void createDB() throws SQLException, IOException {
@@ -147,7 +147,6 @@ public class Crawler
         options.addOption("u", false, "max URL");
         options.addOption("d", false, "domain");
 
-        // jank args parsing
         if (args.length < 1) {
             System.out.println("usage: [-u <maxurls>] [-d domain] url-list");
             return;
