@@ -1,4 +1,5 @@
 #!/bin/bash
 
-javac Crawler.java
-java -cp ./mysql-connector-java-5.1.15-bin.jar: Crawler
+# javac Crawler.java
+javac -cp './commons-cli.jar' Crawler.java
+java -cp './mysql-connector-java-3.1.15-bin.jar' Crawler "$@"

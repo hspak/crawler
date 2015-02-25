@@ -3,15 +3,18 @@ import java.net.*;
 import java.util.regex.*;
 import java.sql.*;
 import java.util.*;
+import org.apache.commons.cli.*;
 
 public class Crawler
 {
     Connection connection;
     int urlID;
+    int maxURL;
     public Properties props;
 
     Crawler() {
         urlID = 0;
+        maxURL = 1000;
     }
 
     public void readProperties() throws IOException {
@@ -38,8 +41,7 @@ public class Crawler
         // Delete the table first if any
         try {
             stat.executeUpdate("DROP TABLE URLS");
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
         }
 
         // Create the table
@@ -101,7 +103,7 @@ public class Crawler
         try {
             URL url = new URL(urlScanned);
             System.out.println("urlscanned="+urlScanned+" url.path="+url.getPath());
- 
+
             // open reader for URL
             InputStreamReader in = new InputStreamReader(url.openStream());
 
@@ -128,10 +130,9 @@ public class Crawler
                 if (!urlInDB(urlFound)) {
                     insertURLInDB(urlFound);
                 }
-                //System.out.println(match);
+                System.out.println(match);
             }
-        }
-        catch (Exception e)
+        } catch (Exception e)
         {
             e.printStackTrace();
         }
@@ -139,16 +140,41 @@ public class Crawler
 
     public static void main(String[] args)
     {
+        CommandLineParser parser = new GnuParser();
+        Options options = new Options();
         Crawler crawler = new Crawler();
+
+        options.addOption("u", false, "max URL");
+        options.addOption("d", false, "domain");
+
+        // jank args parsing
+        if (args.length < 1) {
+            System.out.println("usage: [-u <maxurls>] [-d domain] url-list");
+            return;
+        }
+
+        try {
+            CommandLine line = parser.parse(options, args);
+            String setMaxURL = line.getOptionValue("u");
+
+            if (setMaxURL != null) {
+                System.out.println(line.getOptionValue("u"));
+                crawler.maxURL = Integer.parseInt(line.getOptionValue("u"));
+                System.out.println("u set");
+            } else {
+                System.out.println("wtf");
+            }
+        } catch (ParseException exp) {
+            System.out.println("Unexpected exception:" + exp.getMessage());
+        }
 
         try {
             crawler.readProperties();
             String root = crawler.props.getProperty("crawler.root");
             crawler.createDB();
             crawler.fetchURL(root);
-        }
-        catch( Exception e) {
-                e.printStackTrace();
+        } catch( Exception e) {
+            e.printStackTrace();
         }
     }
 }
