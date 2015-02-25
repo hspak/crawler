@@ -10,17 +10,24 @@ public class Crawler
     Connection connection;
     int urlID;
     int maxURL;
+    String root;
+    String domain;
     public Properties props;
 
     Crawler() {
         urlID = 0;
         maxURL = 1000;
+        root = null;
+        domain = null;
     }
 
     public void readProperties() throws IOException {
         props = new Properties();
         FileInputStream in = new FileInputStream("database.properties");
         props.load(in);
+        this.maxURL = Integer.parseInt(props.getProperty("crawler.maxurls"));
+        this.root = props.getProperty("crawler.root");
+        this.domain = props.getProperty("crawler.domain");
         in.close();
     }
 
@@ -169,9 +176,8 @@ public class Crawler
 
         try {
             crawler.readProperties();
-            String root = crawler.props.getProperty("crawler.root");
             crawler.createDB();
-            crawler.fetchURL(root);
+            crawler.fetchURL(crawler.root);
         } catch( Exception e) {
             e.printStackTrace();
         }
