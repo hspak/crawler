@@ -12,6 +12,7 @@ public class Crawler
     int maxURL;
     String root;
     String domain;
+    String curr;
     public Properties props;
 
     Crawler() {
@@ -19,6 +20,7 @@ public class Crawler
         maxURL = 1000;
         root = null;
         domain = null;
+        curr = null;
     }
 
     public void readProperties() throws IOException {
@@ -28,6 +30,7 @@ public class Crawler
         this.maxURL = Integer.parseInt(props.getProperty("crawler.maxurls"));
         this.root = props.getProperty("crawler.root");
         this.domain = props.getProperty("crawler.domain");
+        this.curr = this.root;
         in.close();
     }
 
@@ -60,85 +63,118 @@ public class Crawler
         ResultSet result = stat.executeQuery( "SELECT * FROM URLS WHERE url LIKE '"+urlFound+"'");
 
         if (result.next()) {
-            System.out.println("URL "+urlFound+" already in DB");
+            // System.out.println("URL "+urlFound+" already in DB");
             return true;
         }
 
-        System.out.println("URL "+urlFound+" not yet in DB");
+        // System.out.println("URL "+urlFound+" not yet in DB");
         return false;
     }
 
     public void insertURLInDB(String url) throws SQLException, IOException {
         Statement stat = connection.createStatement();
+        if (url.charAt(0) == '\"') {
+            url = url.substring(1, url.length()-1);
+        }
         String query = "INSERT INTO URLS VALUES ('"+urlID+"','"+url+"','')";
-        System.out.println("Executing "+query);
+        // System.out.println("Executing "+query);
         stat.executeUpdate( query );
         urlID++;
     }
 
-/*
-    public String makeAbsoluteURL(String url, String parentURL) {
-        if (url.indexOf(":")<0) {
-            // the protocol part is already there.
-            return url;
-        }
-
-        if (url.length > 0 && url.charAt(0) == '/') {
-            // It starts with '/'. Add only host part.
-            int posHost = url.indexOf("://");
-            if (posHost <0) {
-                return url;
+    public void grabURLInDB(int URLID) throws SQLException, IOException {
+        Statement stat = connection.createStatement();
+        ResultSet result = stat.executeQuery("SELECT * FROM URLS WHERE URLID = " + Integer.toString(URLID));
+        if (result.next()) {
+            String res = result.getString("url");
+            if (res.charAt(0) == '\"') {
+                this.curr = res.substring(1, res.length()-1);
+            } else {
+                this.curr = res;
             }
-            int posAfterHist = url.indexOf("/", posHost+3);
-            if (posAfterHist < 0) {
-                posAfterHist = url.Length();
-            }
-            String hostPart = url.substring(0, posAfterHost);
-            return hostPart + "/" + url;
-        }
-
-        // URL start with a char different than "/"
-        int pos = parentURL.lastIndexOf("/");
-        int posHost = parentURL.indexOf("://");
-        if (posHost <0) {
-            return url;
+        } else {
+            this.curr = null;
         }
     }
-*/
+
+    public String makeAbsoluteURL(String url, String parentURL) {
+        System.out.println("Parent " + parentURL);
+        System.out.println("  Child " + url);
+
+        if (parentURL.contains(".html")) {
+            parentURL = parentURL.substring(0, parentURL.length()-5);
+            while (parentURL.charAt(parentURL.length()-1) != '/') {
+                parentURL = parentURL.substring(0, parentURL.length()-1);
+            }
+        }
+
+        if (url.indexOf(":") > 0) {
+            return url;
+        }
+
+        if (url.charAt(0) == '\"') {
+            url = url.substring(1, url.length()-1);
+        }
+
+        while (url.charAt(0) == '.') {
+            url = url.substring(3, url.length());
+
+            // remove last char incase it ended with a /
+            parentURL = parentURL.substring(0, parentURL.length()-1);
+            while (parentURL.charAt(parentURL.length()-1) != '/') {
+                parentURL = parentURL.substring(0, parentURL.length()-1);
+            }
+            System.out.println("  Parent new " + parentURL);
+            System.out.println("  Child new " + url);
+        }
+
+        if (url.charAt(0) == '/' && parentURL.charAt(parentURL.length()-1) == '/') {
+            url = url.substring(1, url.length());
+        }
+        return parentURL + url;
+    }
 
     public void fetchURL(String urlScanned) {
         try {
             URL url = new URL(urlScanned);
-            System.out.println("urlscanned="+urlScanned+" url.path="+url.getPath());
+            // System.out.println("urlscanned="+urlScanned+" url.path="+url.getPath());
 
             // open reader for URL
-            InputStreamReader in = new InputStreamReader(url.openStream());
-
-            // read contents into string builder
-            StringBuilder input = new StringBuilder();
-            int ch;
-            while ((ch = in.read()) != -1) {
-                    input.append((char) ch);
-            }
-
-            // search for all occurrences of pattern
-            String patternString = "<a\\s+href\\s*=\\s*(\"[^\"]*\"|[^\\s>]*)\\s*>";
-            Pattern pattern = Pattern.compile(patternString, Pattern.CASE_INSENSITIVE);
-            Matcher matcher = pattern.matcher(input);
-
-            while (matcher.find()) {
-                int start = matcher.start();
-                int end = matcher.end();
-                String match = input.substring(start, end);
-                String urlFound = matcher.group(1);
-                System.out.println(urlFound);
-
-                // Check if it is already in the database
-                if (!urlInDB(urlFound)) {
-                    insertURLInDB(urlFound);
+            try {
+                InputStreamReader in = new InputStreamReader(url.openStream());
+                // read contents into string builder
+                StringBuilder input = new StringBuilder();
+                int ch;
+                while ((ch = in.read()) != -1) {
+                        input.append((char) ch);
                 }
-                System.out.println(match);
+
+                // TODO: get description here
+                // System.out.println(input.toString());
+
+                // search for all occurrences of pattern
+                String patternString = "<a\\s+href\\s*=\\s*(\"[^\"]*\"|[^\\s>]*)\\s*>";
+                Pattern pattern = Pattern.compile(patternString, Pattern.CASE_INSENSITIVE);
+                Matcher matcher = pattern.matcher(input);
+
+                while (matcher.find()) {
+                    int start = matcher.start();
+                    int end = matcher.end();
+                    String match = input.substring(start, end);
+                    String urlFound = this.makeAbsoluteURL(matcher.group(1), this.curr);
+                    System.out.println("  Full URL " + urlFound);
+
+                    // Check if it is already in the database
+                    if (!urlInDB(urlFound) && !urlFound.contains("mailto:")) {
+                        insertURLInDB(urlFound);
+                    }
+                }
+            } catch (FileNotFoundException exp) {
+                System.out.println("Found dead link: " + url);
+                return;
             }
+
+            
         } catch (Exception e)
         {
             e.printStackTrace();
@@ -174,10 +210,21 @@ public class Crawler
             System.out.println("Unexpected exception:" + exp.getMessage());
         }
 
+        int nextURLID = 0;
+        int nextURLIDScanned = 0;
         try {
             crawler.readProperties();
             crawler.createDB();
-            crawler.fetchURL(crawler.root);
+            while (crawler.curr != null && nextURLID < 50) {
+                // remove weird /index urls
+                if (crawler.curr.substring(crawler.curr.length()-5, crawler.curr.length()).equals("index")) {
+                    crawler.curr = crawler.curr.substring(0, crawler.curr.length()-5);
+                }
+                System.out.println("==> Curr = " + Integer.toString(nextURLID) + " " + crawler.curr);
+                crawler.fetchURL(crawler.curr);
+                crawler.grabURLInDB(nextURLID);
+                nextURLID++;
+            }
         } catch( Exception e) {
             e.printStackTrace();
         }
