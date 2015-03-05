@@ -165,7 +165,7 @@ public class Crawler
                     System.out.println("  Full URL " + urlFound);
 
                     // Check if it is already in the database
-                    if (!urlInDB(urlFound) && !urlFound.contains("mailto:")) {
+                    if (!urlInDB(urlFound) && !urlFound.contains("mailto:") && urlFound.contains(this.domain) && urlFound.contains("http")) {
                         insertURLInDB(urlFound);
                     }
                 }
@@ -174,7 +174,7 @@ public class Crawler
                 return;
             }
 
-            
+
         } catch (Exception e)
         {
             e.printStackTrace();
