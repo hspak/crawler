@@ -160,10 +160,6 @@ public class Crawler
             crawler.readProperties();
             crawler.createDB();
             while (crawler.curr != null && nextURLID < 50) {
-                // remove weird /index urls
-                if (crawler.curr.substring(crawler.curr.length()-5, crawler.curr.length()).equals("index")) {
-                    crawler.curr = crawler.curr.substring(0, crawler.curr.length()-5);
-                }
                 System.out.println("==> Curr = " + Integer.toString(nextURLID) + " " + crawler.curr);
                 crawler.fetchURL(crawler.curr);
                 crawler.grabURLInDB(nextURLID);
