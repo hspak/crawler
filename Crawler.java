@@ -4,6 +4,13 @@ import java.util.regex.*;
 import java.sql.*;
 import java.util.*;
 import org.apache.commons.cli.*;
+import org.apache.commons.cli.GnuParser;
+
+import org.jsoup.Jsoup;
+import org.jsoup.helper.Validate;
+import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
+import org.jsoup.select.Elements;
 
 public class Crawler
 {
@@ -97,118 +104,55 @@ public class Crawler
         }
     }
 
-    public String makeAbsoluteURL(String url, String parentURL) {
-        System.out.println("Parent " + parentURL);
-        System.out.println("  Child " + url);
-
-        if (parentURL.contains(".html")) {
-            parentURL = parentURL.substring(0, parentURL.length()-5);
-            while (parentURL.charAt(parentURL.length()-1) != '/') {
-                parentURL = parentURL.substring(0, parentURL.length()-1);
-            }
-        }
-
-        if (url.indexOf(":") > 0) {
-            return url;
-        }
-
-        if (url.charAt(0) == '\"') {
-            url = url.substring(1, url.length()-1);
-        }
-
-        while (url.charAt(0) == '.') {
-            url = url.substring(3, url.length());
-
-            // remove last char incase it ended with a /
-            parentURL = parentURL.substring(0, parentURL.length()-1);
-            while (parentURL.charAt(parentURL.length()-1) != '/') {
-                parentURL = parentURL.substring(0, parentURL.length()-1);
-            }
-            System.out.println("  Parent new " + parentURL);
-            System.out.println("  Child new " + url);
-        }
-
-        if (url.charAt(0) == '/' && parentURL.charAt(parentURL.length()-1) == '/') {
-            url = url.substring(1, url.length());
-        }
-        return parentURL + url;
-    }
-
     public void fetchURL(String urlScanned) {
         try {
-            URL url = new URL(urlScanned);
-            // System.out.println("urlscanned="+urlScanned+" url.path="+url.getPath());
-
-            // open reader for URL
-            try {
-                InputStreamReader in = new InputStreamReader(url.openStream());
-                // read contents into string builder
-                StringBuilder input = new StringBuilder();
-                int ch;
-                while ((ch = in.read()) != -1) {
-                        input.append((char) ch);
-                }
-
-                // TODO: get description here
-                // System.out.println(input.toString());
-
-                // search for all occurrences of pattern
-                String patternString = "<a\\s+href\\s*=\\s*(\"[^\"]*\"|[^\\s>]*)\\s*>";
-                Pattern pattern = Pattern.compile(patternString, Pattern.CASE_INSENSITIVE);
-                Matcher matcher = pattern.matcher(input);
-
-                while (matcher.find()) {
-                    int start = matcher.start();
-                    int end = matcher.end();
-                    String match = input.substring(start, end);
-                    String urlFound = this.makeAbsoluteURL(matcher.group(1), this.curr);
-                    System.out.println("  Full URL " + urlFound);
-
-                    // Check if it is already in the database
-                    if (!urlInDB(urlFound) && !urlFound.contains("mailto:") && urlFound.contains(this.domain) && urlFound.contains("http")) {
-                        insertURLInDB(urlFound);
+            Document doc = Jsoup.connect(urlScanned).get();
+            Elements links = doc.select("a[href]");
+            for (Element link: links) {
+                String url = link.attr("abs:href");
+                try {
+                    if (!urlInDB(url) && !url.contains("mailto") && url.contains(this.domain)) {
+                        insertURLInDB(url);
                     }
+                } catch (SQLException e) {
+                    return;
+                    // System.out.println(e.stackTrace);
                 }
-            } catch (FileNotFoundException exp) {
-                System.out.println("Found dead link: " + url);
-                return;
             }
-
-
-        } catch (Exception e)
-        {
-            e.printStackTrace();
+        } catch (IOException e) {
+            return;
+            // System.out.println(e.stackTrace);
         }
     }
 
     public static void main(String[] args)
     {
-        CommandLineParser parser = new GnuParser();
-        Options options = new Options();
+        // CommandLineParser parser = new GnuParser();
+        // Options options = new Options();
         Crawler crawler = new Crawler();
 
-        options.addOption("u", false, "max URL");
-        options.addOption("d", false, "domain");
+        // options.addOption("u", false, "max URL");
+        // options.addOption("d", false, "domain");
 
         if (args.length < 1) {
             System.out.println("usage: [-u <maxurls>] [-d domain] url-list");
             return;
         }
 
-        try {
-            CommandLine line = parser.parse(options, args);
-            String setMaxURL = line.getOptionValue("u");
+        // try {
+            // CommandLine line = parser.parse(options, args);
+            // String setMaxURL = line.getOptionValue("u");
 
-            if (setMaxURL != null) {
-                System.out.println(line.getOptionValue("u"));
-                crawler.maxURL = Integer.parseInt(line.getOptionValue("u"));
-                System.out.println("u set");
-            } else {
-                System.out.println("wtf");
-            }
-        } catch (ParseException exp) {
-            System.out.println("Unexpected exception:" + exp.getMessage());
-        }
+            // if (setMaxURL != null) {
+                // System.out.println(line.getOptionValue("u"));
+                // crawler.maxURL = Integer.parseInt(line.getOptionValue("u"));
+                // System.out.println("u set");
+            // } else {
+                // System.out.println("wtf");
+            // }
+        // } catch (ParseException exp) {
+            // System.out.println("Unexpected exception:" + exp.getMessage());
+        // }
 
         int nextURLID = 0;
         int nextURLIDScanned = 0;
