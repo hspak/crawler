@@ -3,8 +3,6 @@ import java.net.*;
 import java.util.regex.*;
 import java.sql.*;
 import java.util.*;
-import org.apache.commons.cli.*;
-import org.apache.commons.cli.GnuParser;
 
 import org.jsoup.Jsoup;
 import org.jsoup.helper.Validate;
@@ -14,6 +12,9 @@ import org.jsoup.select.Elements;
 
 public class Crawler
 {
+    static int nextURLID;
+    static int nextURLIDScanned;
+
     Connection connection;
     int urlID;
     int maxURL;
@@ -23,6 +24,9 @@ public class Crawler
     public Properties props;
 
     Crawler() {
+        nextURLID = 0;
+        nextURLIDScanned = 0;
+
         urlID = 0;
         maxURL = 1000;
         root = null;
@@ -127,35 +131,13 @@ public class Crawler
 
     public static void main(String[] args)
     {
-        // CommandLineParser parser = new GnuParser();
-        // Options options = new Options();
         Crawler crawler = new Crawler();
-
-        // options.addOption("u", false, "max URL");
-        // options.addOption("d", false, "domain");
 
         if (args.length < 1) {
             System.out.println("usage: [-u <maxurls>] [-d domain] url-list");
             return;
         }
 
-        // try {
-            // CommandLine line = parser.parse(options, args);
-            // String setMaxURL = line.getOptionValue("u");
-
-            // if (setMaxURL != null) {
-                // System.out.println(line.getOptionValue("u"));
-                // crawler.maxURL = Integer.parseInt(line.getOptionValue("u"));
-                // System.out.println("u set");
-            // } else {
-                // System.out.println("wtf");
-            // }
-        // } catch (ParseException exp) {
-            // System.out.println("Unexpected exception:" + exp.getMessage());
-        // }
-
-        int nextURLID = 0;
-        int nextURLIDScanned = 0;
         try {
             crawler.readProperties();
             crawler.createDB();
