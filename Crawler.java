@@ -42,6 +42,7 @@ public class Crawler
         this.root = props.getProperty("crawler.root");
         this.domain = props.getProperty("crawler.domain");
         this.curr = this.root;
+        nextURLIDScanned++;
         in.close();
     }
 
@@ -74,11 +75,8 @@ public class Crawler
         ResultSet result = stat.executeQuery( "SELECT * FROM URLS WHERE url LIKE '"+urlFound+"'");
 
         if (result.next()) {
-            // System.out.println("URL "+urlFound+" already in DB");
             return true;
         }
-
-        // System.out.println("URL "+urlFound+" not yet in DB");
         return false;
     }
 
@@ -88,7 +86,6 @@ public class Crawler
             url = url.substring(1, url.length()-1);
         }
         String query = "INSERT INTO URLS VALUES ('"+urlID+"','"+url+"','')";
-        // System.out.println("Executing "+query);
         stat.executeUpdate( query );
         urlID++;
     }
@@ -97,12 +94,7 @@ public class Crawler
         Statement stat = connection.createStatement();
         ResultSet result = stat.executeQuery("SELECT * FROM URLS WHERE URLID = " + Integer.toString(URLID));
         if (result.next()) {
-            String res = result.getString("url");
-            if (res.charAt(0) == '\"') {
-                this.curr = res.substring(1, res.length()-1);
-            } else {
-                this.curr = res;
-            }
+            this.curr = result.getString("url");
         } else {
             this.curr = null;
         }
@@ -117,15 +109,14 @@ public class Crawler
                 try {
                     if (!urlInDB(url) && !url.contains("mailto") && url.contains(this.domain)) {
                         insertURLInDB(url);
+                        nextURLIDScanned++;
                     }
                 } catch (SQLException e) {
-                    return;
-                    // System.out.println(e.stackTrace);
+                    e.printStackTrace();
                 }
             }
         } catch (IOException e) {
-            return;
-            // System.out.println(e.stackTrace);
+            e.printStackTrace();
         }
     }
 
@@ -141,8 +132,7 @@ public class Crawler
         try {
             crawler.readProperties();
             crawler.createDB();
-            while (crawler.curr != null && nextURLID < 50) {
-                System.out.println("==> Curr = " + Integer.toString(nextURLID) + " " + crawler.curr);
+            while (crawler.curr != null && nextURLID < crawler.maxURL && nextURLID < nextURLIDScanned) {
                 crawler.fetchURL(crawler.curr);
                 crawler.grabURLInDB(nextURLID);
                 nextURLID++;
