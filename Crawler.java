@@ -64,10 +64,11 @@ public class Crawler
         try {
             stat.executeUpdate("DROP TABLE URLS");
         } catch (Exception e) {
+            //
         }
 
         // Create the table
-        stat.executeUpdate("CREATE TABLE URLS (urlid INT, url VARCHAR(512), description VARCHAR(200))");
+        stat.executeUpdate("CREATE TABLE URLS (urlid INT, url VARCHAR(512), description VARCHAR(200), image VARCHAR(512))");
     }
 
     public boolean urlInDB(String urlFound) throws SQLException, IOException {
@@ -82,17 +83,23 @@ public class Crawler
 
     public void insertURLInDB(String url) throws SQLException, IOException {
         Statement stat = connection.createStatement();
-        if (url.charAt(0) == '\"') {
-            url = url.substring(1, url.length()-1);
-        }
-        String query = "INSERT INTO URLS VALUES ('"+urlID+"','"+url+"','')";
-        stat.executeUpdate( query );
-        urlID++;
+        String query = "INSERT INTO URLS VALUES ('" + urlID + "','" + url + "', '', '')";
+        // System.out.println(query);
+        stat.executeUpdate(query);
+        this.urlID++;
+    }
+
+    // TODO: should do this when the user searches
+    public void insertImageInDB(String urlid, String imageSrc) throws SQLException, IOException {
+        Statement stat = connection.createStatement();
+        String query = "UPDATE urls SET image='" + imageSrc + "' WHERE urlid=" + urlid + ";";
+        // System.out.println(query);
+        stat.executeUpdate(query);
     }
 
     public void grabURLInDB(int URLID) throws SQLException, IOException {
         Statement stat = connection.createStatement();
-        ResultSet result = stat.executeQuery("SELECT * FROM URLS WHERE URLID = " + Integer.toString(URLID));
+        ResultSet result = stat.executeQuery("SELECT url FROM urls WHERE urlid = " + Integer.toString(URLID));
         if (result.next()) {
             this.curr = result.getString("url");
         } else {
@@ -100,9 +107,10 @@ public class Crawler
         }
     }
 
+    // TODO: spaces and quotes in urls,
     public void fetchURL(String urlScanned) {
         try {
-            Document doc = Jsoup.connect(urlScanned).get();
+            Document doc = Jsoup.connect(urlScanned).ignoreContentType(true).get();
             Elements links = doc.select("a[href]");
             for (Element link: links) {
                 String url = link.attr("abs:href");
@@ -133,6 +141,7 @@ public class Crawler
             crawler.readProperties();
             crawler.createDB();
             while (crawler.curr != null && nextURLID < crawler.maxURL && nextURLID < nextURLIDScanned) {
+                // System.out.println(Integer.toString(crawler.urlID) + " " + Integer.toString(crawler.maxURL));
                 crawler.fetchURL(crawler.curr);
                 crawler.grabURLInDB(nextURLID);
                 nextURLID++;
