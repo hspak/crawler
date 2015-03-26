@@ -41,7 +41,6 @@ public class Crawler
         this.maxURL = Integer.parseInt(props.getProperty("crawler.maxurls"));
         this.root = props.getProperty("crawler.root");
         this.domain = props.getProperty("crawler.domain");
-        System.out.println(this.maxURL);
         this.curr = this.root;
         nextURLIDScanned++;
         in.close();
@@ -83,9 +82,10 @@ public class Crawler
     }
 
     public void insertURLInDB(String url) throws SQLException, IOException {
+        url = url.replace("'", "\'");
+
         Statement stat = connection.createStatement();
-        String query = "INSERT INTO URLS VALUES ('" + urlID + "','" + url + "', '', '')";
-        // System.out.println(query);
+        String query = "INSERT INTO urls(urlid, url) VALUES ('" + urlID + "','" + url + "');";
         stat.executeUpdate(query);
         this.urlID++;
     }
@@ -113,62 +113,66 @@ public class Crawler
     }
 
     public void fetchURL(String urlScanned) {
-        System.out.println("fetchURL: " + urlScanned + " " + nextURLID);
         try {
-            Document doc = Jsoup.connect(urlScanned).ignoreContentType(true).get();
+            try {
+                Document doc = Jsoup.connect(urlScanned).ignoreContentType(true).get();
 
-            // grab all links
-            if (nextURLIDScanned < this.maxURL) {
-                Elements links = doc.select("a[href]");
-                for (Element link: links) {
-                    String url = link.attr("abs:href");
-                    try {
-                        if (!urlInDB(url) && url.contains("http") && url.contains(this.domain)) {
-                            insertURLInDB(url);
-                            nextURLIDScanned++;
-                            System.out.println(nextURLIDScanned + " " + this.maxURL);
-                            if (nextURLIDScanned == this.maxURL) {
-                                break;
+                // grab all links
+                if (nextURLIDScanned < this.maxURL) {
+                    Elements links = doc.select("a[href*=http]");
+                    for (Element link: links) {
+                        String url = link.attr("abs:href");
+                        try {
+                            if (!urlInDB(url) && url.contains(this.domain)) {
+                                url = url.replace(" ", "%20");
+                                insertURLInDB(url);
+                                nextURLIDScanned++;
+                                if (nextURLIDScanned > this.maxURL) {
+                                    break;
+                                }
                             }
+                        } catch (SQLException e) {
+                            e.printStackTrace();
                         }
-                    } catch (SQLException e) {
-                        e.printStackTrace();
                     }
                 }
-            }
 
-            if (nextURLID != 0) {
-                // grab first image
-                Element image = doc.select("img").first();
-                if (image != null) {
-                    String imageURL = image.absUrl("src");
+                if (nextURLID != 0) {
+                    // grab first image
+                    Element image = doc.select("img").first();
+                    if (image != null) {
+                        String imageURL = image.absUrl("src");
+                        try {
+                            this.insertImageInDB(nextURLID - 1, imageURL);
+                        } catch (SQLException e) {
+                            e.printStackTrace();
+                        }
+                    } else {
+                        // TODO: maybe log
+                    }
+
+                    // grab description
+                    String title = doc.select("title").text();
+                    String body = doc.select("body").text();
+                    int titleLen = title.length();
+                    int bodyLen = body.length();
+                    if (titleLen > 45) {
+                        titleLen = 45;
+                    }
+                    if (bodyLen > 150) {
+                        bodyLen = 150;
+                    }
+
+                    String save = title.substring(0, titleLen) + ": " + body.substring(0, bodyLen);
                     try {
-                        this.insertImageInDB(nextURLID - 1, imageURL);
+                        this.insertDescInDB(nextURLID - 1, save);
                     } catch (SQLException e) {
                         e.printStackTrace();
                     }
-                } else {
-                    // TODO: maybe log
                 }
-
-                // grab description
-                String title = doc.select("title").text();
-                String body = doc.select("body").text();
-                int titleLen = title.length();
-                int bodyLen = body.length();
-                if (titleLen > 45) {
-                    titleLen = 45;
-                }
-                if (bodyLen > 150) {
-                    bodyLen = 150;
-                }
-
-                String save = title.substring(0, titleLen) + ": " + body.substring(0, bodyLen);
-                try {
-                    this.insertDescInDB(nextURLID - 1, save);
-                } catch (SQLException e) {
-                    e.printStackTrace();
-                }
+            } catch (org.jsoup.HttpStatusException e) {
+                System.out.println("dead link: " + urlScanned);
+                // TODO: log
             }
         } catch (IOException e) {
             e.printStackTrace();
