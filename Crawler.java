@@ -41,6 +41,7 @@ public class Crawler
         this.maxURL = Integer.parseInt(props.getProperty("crawler.maxurls"));
         this.root = props.getProperty("crawler.root");
         this.domain = props.getProperty("crawler.domain");
+        System.out.println(this.maxURL);
         this.curr = this.root;
         nextURLIDScanned++;
         in.close();
@@ -89,11 +90,15 @@ public class Crawler
         this.urlID++;
     }
 
-    // TODO: should do this when the user searches
-    public void insertImageInDB(String urlid, String imageSrc) throws SQLException, IOException {
+    public void insertImageInDB(int urlid, String imageSrc) throws SQLException, IOException {
         Statement stat = connection.createStatement();
-        String query = "UPDATE urls SET image='" + imageSrc + "' WHERE urlid=" + urlid + ";";
-        // System.out.println(query);
+        String query = "UPDATE urls SET image='" + imageSrc + "' WHERE urlid='" + urlid + "';";
+        stat.executeUpdate(query);
+    }
+
+    public void insertDescInDB(int urlid, String desc) throws SQLException, IOException {
+        Statement stat = connection.createStatement();
+        String query = "UPDATE urls SET description='" + desc + "' WHERE urlid='" + urlid + "';";
         stat.executeUpdate(query);
     }
 
@@ -107,18 +112,60 @@ public class Crawler
         }
     }
 
-    // TODO: spaces and quotes in urls,
     public void fetchURL(String urlScanned) {
+        System.out.println("fetchURL: " + urlScanned + " " + nextURLID);
         try {
             Document doc = Jsoup.connect(urlScanned).ignoreContentType(true).get();
-            Elements links = doc.select("a[href]");
-            for (Element link: links) {
-                String url = link.attr("abs:href");
-                try {
-                    if (!urlInDB(url) && !url.contains("mailto") && url.contains(this.domain)) {
-                        insertURLInDB(url);
-                        nextURLIDScanned++;
+
+            // grab all links
+            if (nextURLIDScanned < this.maxURL) {
+                Elements links = doc.select("a[href]");
+                for (Element link: links) {
+                    String url = link.attr("abs:href");
+                    try {
+                        if (!urlInDB(url) && url.contains("http") && url.contains(this.domain)) {
+                            insertURLInDB(url);
+                            nextURLIDScanned++;
+                            System.out.println(nextURLIDScanned + " " + this.maxURL);
+                            if (nextURLIDScanned == this.maxURL) {
+                                break;
+                            }
+                        }
+                    } catch (SQLException e) {
+                        e.printStackTrace();
                     }
+                }
+            }
+
+            if (nextURLID != 0) {
+                // grab first image
+                Element image = doc.select("img").first();
+                if (image != null) {
+                    String imageURL = image.absUrl("src");
+                    try {
+                        this.insertImageInDB(nextURLID - 1, imageURL);
+                    } catch (SQLException e) {
+                        e.printStackTrace();
+                    }
+                } else {
+                    // TODO: maybe log
+                }
+
+                // grab description
+                String title = doc.select("title").text();
+                String body = doc.select("body").text();
+                int titleLen = title.length();
+                int bodyLen = body.length();
+                if (titleLen > 45) {
+                    titleLen = 45;
+                }
+                if (bodyLen > 150) {
+                    bodyLen = 150;
+                }
+
+                String save = title.substring(0, titleLen) + ": " + body.substring(0, bodyLen);
+                try {
+                    this.insertDescInDB(nextURLID - 1, save);
                 } catch (SQLException e) {
                     e.printStackTrace();
                 }
@@ -131,17 +178,10 @@ public class Crawler
     public static void main(String[] args)
     {
         Crawler crawler = new Crawler();
-
-        if (args.length < 1) {
-            System.out.println("usage: [-u <maxurls>] [-d domain] url-list");
-            return;
-        }
-
         try {
             crawler.readProperties();
             crawler.createDB();
-            while (crawler.curr != null && nextURLID < crawler.maxURL && nextURLID < nextURLIDScanned) {
-                // System.out.println(Integer.toString(crawler.urlID) + " " + Integer.toString(crawler.maxURL));
+            while (crawler.curr != null && nextURLID < nextURLIDScanned) {
                 crawler.fetchURL(crawler.curr);
                 crawler.grabURLInDB(nextURLID);
                 nextURLID++;
