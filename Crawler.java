@@ -116,10 +116,15 @@ public class Crawler
         try {
             try {
                 Document doc = Jsoup.connect(urlScanned).ignoreContentType(true).get();
+                try {
+                    Thread.sleep(100);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
 
                 // grab all links
                 if (nextURLIDScanned < this.maxURL) {
-                    Elements links = doc.select("a[href*=http]");
+                    Elements links = doc.select("a[href]");
                     for (Element link: links) {
                         String url = link.attr("abs:href");
                         try {
@@ -127,6 +132,7 @@ public class Crawler
                                 url = url.replace(" ", "%20");
                                 insertURLInDB(url);
                                 nextURLIDScanned++;
+                                System.out.println("add " + nextURLIDScanned);
                                 if (nextURLIDScanned > this.maxURL) {
                                     break;
                                 }
@@ -186,6 +192,7 @@ public class Crawler
             crawler.readProperties();
             crawler.createDB();
             while (crawler.curr != null && nextURLID < nextURLIDScanned) {
+                System.out.println(nextURLID + " " + nextURLIDScanned + " " + crawler.curr);
                 crawler.fetchURL(crawler.curr);
                 crawler.grabURLInDB(nextURLID);
                 nextURLID++;
