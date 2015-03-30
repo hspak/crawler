@@ -72,6 +72,8 @@ public class Crawler
     }
 
     public boolean urlInDB(String urlFound) throws SQLException, IOException {
+        urlFound = urlFound.replace("'", "\'");
+
         Statement stat = connection.createStatement();
         ResultSet result = stat.executeQuery( "SELECT * FROM URLS WHERE url LIKE '"+urlFound+"'");
 
@@ -91,12 +93,16 @@ public class Crawler
     }
 
     public void insertImageInDB(int urlid, String imageSrc) throws SQLException, IOException {
+        imageSrc = imageSrc.replace("'", "\'");
+
         Statement stat = connection.createStatement();
         String query = "UPDATE urls SET image='" + imageSrc + "' WHERE urlid='" + urlid + "';";
         stat.executeUpdate(query);
     }
 
     public void insertDescInDB(int urlid, String desc) throws SQLException, IOException {
+        desc = desc.replace("'", "\'");
+
         Statement stat = connection.createStatement();
         String query = "UPDATE urls SET description='" + desc + "' WHERE urlid='" + urlid + "';";
         stat.executeUpdate(query);
@@ -128,7 +134,7 @@ public class Crawler
                     for (Element link: links) {
                         String url = link.attr("abs:href");
                         try {
-                            if (!urlInDB(url) && url.contains(this.domain)) {
+                            if (!urlInDB(url) && url.contains(this.domain) && url.contains("http")) {
                                 url = url.replace(" ", "%20");
                                 insertURLInDB(url);
                                 nextURLIDScanned++;
@@ -148,6 +154,13 @@ public class Crawler
                     Element image = doc.select("img").first();
                     if (image != null) {
                         String imageURL = image.absUrl("src");
+                        if (imageURL.equals("https://www.cs.purdue.edu/images/logo.svg")) {
+                            Element noLogo = doc.select("img").get(1);
+                            if (image != null) {
+                                imageURL = noLogo.absUrl("src");
+                            }
+                        }
+
                         try {
                             this.insertImageInDB(nextURLID - 1, imageURL);
                         } catch (SQLException e) {
@@ -159,17 +172,23 @@ public class Crawler
 
                     // grab description
                     String title = doc.select("title").text();
-                    String body = doc.select("body").text();
+                    String p = doc.select("p").text();
+                    title = title.replaceAll("[^A-Za-z0-9 ]", "");
+                    p = p.replaceAll("[^A-Za-z0-9 ]", "");
                     int titleLen = title.length();
-                    int bodyLen = body.length();
-                    if (titleLen > 45) {
+                    int pLen = p.length();
+
+                    if (titleLen > 45 && pLen > 10) {
                         titleLen = 45;
-                    }
-                    if (bodyLen > 150) {
-                        bodyLen = 150;
+                    } else if (titleLen > 197) {
+                        titleLen = 197;
                     }
 
-                    String save = title.substring(0, titleLen) + ": " + body.substring(0, bodyLen);
+                    if (pLen > 152) {
+                        pLen = 152;
+                    }
+
+                    String save = title.substring(0, titleLen) + " " + p.substring(0, pLen);
                     try {
                         this.insertDescInDB(nextURLID - 1, save);
                     } catch (SQLException e) {
