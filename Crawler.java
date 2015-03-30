@@ -72,8 +72,6 @@ public class Crawler
     }
 
     public boolean urlInDB(String urlFound) throws SQLException, IOException {
-        urlFound = urlFound.replace("'", "\'");
-
         Statement stat = connection.createStatement();
         ResultSet result = stat.executeQuery( "SELECT * FROM URLS WHERE url LIKE '"+urlFound+"'");
 
@@ -84,8 +82,6 @@ public class Crawler
     }
 
     public void insertURLInDB(String url) throws SQLException, IOException {
-        url = url.replace("'", "\'");
-
         Statement stat = connection.createStatement();
         String query = "INSERT INTO urls(urlid, url) VALUES ('" + urlID + "','" + url + "');";
         stat.executeUpdate(query);
@@ -93,16 +89,12 @@ public class Crawler
     }
 
     public void insertImageInDB(int urlid, String imageSrc) throws SQLException, IOException {
-        imageSrc = imageSrc.replace("'", "\'");
-
         Statement stat = connection.createStatement();
         String query = "UPDATE urls SET image='" + imageSrc + "' WHERE urlid='" + urlid + "';";
         stat.executeUpdate(query);
     }
 
     public void insertDescInDB(int urlid, String desc) throws SQLException, IOException {
-        desc = desc.replace("'", "\'");
-
         Statement stat = connection.createStatement();
         String query = "UPDATE urls SET description='" + desc + "' WHERE urlid='" + urlid + "';";
         stat.executeUpdate(query);
@@ -136,6 +128,7 @@ public class Crawler
                         try {
                             if (!urlInDB(url) && url.contains(this.domain) && url.contains("http")) {
                                 url = url.replace(" ", "%20");
+                                url = url.replace("'", "\'");
                                 insertURLInDB(url);
                                 nextURLIDScanned++;
                                 System.out.println("add " + nextURLIDScanned);
@@ -155,9 +148,16 @@ public class Crawler
                     if (image != null) {
                         String imageURL = image.absUrl("src");
                         if (imageURL.equals("https://www.cs.purdue.edu/images/logo.svg")) {
-                            Element noLogo = doc.select("img").get(1);
-                            if (image != null) {
-                                imageURL = noLogo.absUrl("src");
+                            if (doc.select("img").size() > 2) {
+                                Element noLogo = doc.select("img").get(2);
+                                if (image != null) {
+                                    imageURL = noLogo.absUrl("src");
+                                }
+                            } else {
+                                Element noLogo = doc.select("img").get(1);
+                                if (image != null) {
+                                    imageURL = noLogo.absUrl("src");
+                                }
                             }
                         }
 
@@ -197,7 +197,6 @@ public class Crawler
                 }
             } catch (org.jsoup.HttpStatusException e) {
                 System.out.println("dead link: " + urlScanned);
-                // TODO: log
             }
         } catch (IOException e) {
             e.printStackTrace();
