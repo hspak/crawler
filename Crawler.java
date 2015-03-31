@@ -69,7 +69,7 @@ public class Crawler
         }
 
         // Create the table
-        stat.executeUpdate("CREATE TABLE urls (urlid INT, url VARCHAR(512), description VARCHAR(400), image VARCHAR(512))");
+        stat.executeUpdate("CREATE TABLE urls (urlid INT NOT NULL, url VARCHAR(512), description VARCHAR(200), image VARCHAR(512), PRIMARY KEY(urlid))");
         stat.executeUpdate("CREATE TABLE words (word VARCHAR(100), urlid INT)");
     }
 
@@ -79,13 +79,18 @@ public class Crawler
         String[] split = desc.split(" ");
         String query = "";
         for (String w: split) {
-            if (w.length() <= 1) continue;
+            if (w.length() <= 1) {
+                continue;
+            } else if (w.length() > 100) {
+                w = w.substring(0, 99);
+            }
             query += "('" + w + "'," + "'" + Integer.toString(urlid) + "'), ";
         }
-        query = query.substring(0, query.length()-2);
-        query = "INSERT INTO words(word, urlid) values" + query + ";";
-        stat.executeUpdate(query);
-        this.urlID++;
+        if (query.length() > 2) {
+            query = query.substring(0, query.length()-2);
+            query = "INSERT INTO words(word, urlid) values" + query + ";";
+            stat.executeUpdate(query);
+        }
     }
 
     public boolean urlInDB(String urlFound) throws SQLException, IOException {
@@ -138,11 +143,6 @@ public class Crawler
         try {
             try {
                 Document doc = Jsoup.connect(urlScanned).ignoreContentType(false).timeout(5000).get();
-                try {
-                    Thread.sleep(50);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
 
                 // grab all links
                 if (nextURLIDScanned < this.maxURL) {
@@ -150,9 +150,9 @@ public class Crawler
                     for (Element link: links) {
                         String url = link.attr("abs:href");
                         try {
+                            url = url.replace(" ", "%20");
+                            url = url.replace("'", "\\'");
                             if (!urlInDB(url) && url.contains(this.domain) && url.contains("http") && !url.contains("#")) {
-                                url = url.replace(" ", "%20");
-                                url = url.replace("'", "\'");
                                 insertURLInDB(url);
                                 nextURLIDScanned++;
                                 System.out.println("add " + nextURLIDScanned);
@@ -193,27 +193,26 @@ public class Crawler
                     }
 
                     // grab description
-                    String title = doc.select("title").text();
-                    String p = doc.select("p").text();
-                    title = title.replaceAll("[^A-Za-z0-9 ]", "");
-                    p = p.replaceAll("[^A-Za-z0-9 ]", "");
+                    String title = doc.select("title").text().replaceAll("[^A-Za-z0-9 ]", ""); ;
+                    String p = doc.select("p").text().replaceAll("[^A-Za-z0-9 ]", ""); ;
+                    String fullBody = doc.select("body").text().replaceAll("[^A-Za-z0-9 ]", ""); ;
                     int titleLen = title.length();
                     int pLen = p.length();
 
                     if (titleLen > 45 && pLen > 10) {
                         titleLen = 45;
-                    } else if (titleLen > 397) {
-                        titleLen = 397;
+                    } else if (titleLen > 197) {
+                        titleLen = 197;
                     }
 
-                    if (pLen > 352) {
-                        pLen = 352;
+                    if (pLen > 152) {
+                        pLen = 152;
                     }
 
                     String save = title.substring(0, titleLen) + " " + p.substring(0, pLen);
                     try {
                         this.insertDescInDB(nextURLID - 1, save);
-                        this.insertWordTable(nextURLID - 1, save);
+                        this.insertWordTable(nextURLID - 1, fullBody);
                     } catch (SQLException e) {
                         e.printStackTrace();
                     }
