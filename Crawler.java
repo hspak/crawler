@@ -28,7 +28,7 @@ public class Crawler
         nextURLIDScanned = 0;
 
         urlID = 0;
-        maxURL = 1000;
+        maxURL = 100000;
         root = null;
         domain = null;
         curr = null;
@@ -81,6 +81,13 @@ public class Crawler
         return false;
     }
 
+    public void deleteURLInDB(int urlid) throws SQLException, IOException {
+       Statement stat = connection.createStatement();
+        String query = "DELETE FROM urls WHERE urlid='" + urlid + "'";
+        stat.executeUpdate(query);
+        this.urlID++;
+    }
+
     public void insertURLInDB(String url) throws SQLException, IOException {
         Statement stat = connection.createStatement();
         String query = "INSERT INTO urls(urlid, url) VALUES ('" + urlID + "','" + url + "');";
@@ -113,9 +120,9 @@ public class Crawler
     public void fetchURL(String urlScanned) {
         try {
             try {
-                Document doc = Jsoup.connect(urlScanned).ignoreContentType(true).get();
+                Document doc = Jsoup.connect(urlScanned).ignoreContentType(false).get();
                 try {
-                    Thread.sleep(100);
+                    Thread.sleep(50);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
@@ -195,8 +202,12 @@ public class Crawler
                         e.printStackTrace();
                     }
                 }
-            } catch (org.jsoup.HttpStatusException e) {
-                System.out.println("dead link: " + urlScanned);
+            } catch (org.jsoup.HttpStatusException|org.jsoup.UnsupportedMimeTypeException e) {
+                try {
+                    deleteURLInDB(nextURLID - 1);
+                } catch (SQLException ee) {
+                    ee.printStackTrace();
+                }
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -209,6 +220,7 @@ public class Crawler
         try {
             crawler.readProperties();
             crawler.createDB();
+            // crawler.grabURLInDB(999);
             while (crawler.curr != null && nextURLID < nextURLIDScanned) {
                 System.out.println(nextURLID + " " + nextURLIDScanned + " " + crawler.curr);
                 crawler.fetchURL(crawler.curr);
