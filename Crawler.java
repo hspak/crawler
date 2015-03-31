@@ -56,24 +56,41 @@ public class Crawler
         connection = DriverManager.getConnection(url, username, password);
     }
 
-    public void createDB() throws SQLException, IOException {
-        openConnection();
+    public void createDB() throws SQLException, IOException
+    {
+        this.openConnection();
         Statement stat = connection.createStatement();
 
         // Delete the table first if any
         try {
-            stat.executeUpdate("DROP TABLE URLS");
+            stat.executeUpdate("DROP TABLE urls");
+            stat.executeUpdate("DROP TABLE words");
         } catch (Exception e) {
-            //
         }
 
         // Create the table
-        stat.executeUpdate("CREATE TABLE URLS (urlid INT, url VARCHAR(512), description VARCHAR(200), image VARCHAR(512))");
+        stat.executeUpdate("CREATE TABLE urls (urlid INT, url VARCHAR(512), description VARCHAR(400), image VARCHAR(512))");
+        stat.executeUpdate("CREATE TABLE words (word VARCHAR(100), urlid INT)");
+    }
+
+    public void insertWordTable(int urlid, String desc) throws SQLException, IOException
+    {
+        Statement stat = connection.createStatement();
+        String[] split = desc.split(" ");
+        String query = "";
+        for (String w: split) {
+            if (w.length() <= 1) continue;
+            query += "('" + w + "'," + "'" + Integer.toString(urlid) + "'), ";
+        }
+        query = query.substring(0, query.length()-2);
+        query = "INSERT INTO words(word, urlid) values" + query + ";";
+        stat.executeUpdate(query);
+        this.urlID++;
     }
 
     public boolean urlInDB(String urlFound) throws SQLException, IOException {
         Statement stat = connection.createStatement();
-        ResultSet result = stat.executeQuery( "SELECT * FROM URLS WHERE url LIKE '"+urlFound+"'");
+        ResultSet result = stat.executeQuery( "SELECT * FROM urls WHERE url LIKE '"+urlFound+"'");
 
         if (result.next()) {
             return true;
@@ -120,7 +137,7 @@ public class Crawler
     public void fetchURL(String urlScanned) {
         try {
             try {
-                Document doc = Jsoup.connect(urlScanned).ignoreContentType(false).get();
+                Document doc = Jsoup.connect(urlScanned).ignoreContentType(false).timeout(5000).get();
                 try {
                     Thread.sleep(50);
                 } catch (InterruptedException e) {
@@ -133,7 +150,7 @@ public class Crawler
                     for (Element link: links) {
                         String url = link.attr("abs:href");
                         try {
-                            if (!urlInDB(url) && url.contains(this.domain) && url.contains("http")) {
+                            if (!urlInDB(url) && url.contains(this.domain) && url.contains("http") && !url.contains("#")) {
                                 url = url.replace(" ", "%20");
                                 url = url.replace("'", "\'");
                                 insertURLInDB(url);
@@ -150,7 +167,7 @@ public class Crawler
                 }
 
                 if (nextURLID != 0) {
-                    // grab first image
+                    // image stuff
                     Element image = doc.select("img").first();
                     if (image != null) {
                         String imageURL = image.absUrl("src");
@@ -173,8 +190,6 @@ public class Crawler
                         } catch (SQLException e) {
                             e.printStackTrace();
                         }
-                    } else {
-                        // TODO: maybe log
                     }
 
                     // grab description
@@ -187,24 +202,26 @@ public class Crawler
 
                     if (titleLen > 45 && pLen > 10) {
                         titleLen = 45;
-                    } else if (titleLen > 197) {
-                        titleLen = 197;
+                    } else if (titleLen > 397) {
+                        titleLen = 397;
                     }
 
-                    if (pLen > 152) {
-                        pLen = 152;
+                    if (pLen > 352) {
+                        pLen = 352;
                     }
 
                     String save = title.substring(0, titleLen) + " " + p.substring(0, pLen);
                     try {
                         this.insertDescInDB(nextURLID - 1, save);
+                        this.insertWordTable(nextURLID - 1, save);
                     } catch (SQLException e) {
                         e.printStackTrace();
                     }
                 }
             } catch (org.jsoup.HttpStatusException|org.jsoup.UnsupportedMimeTypeException e) {
                 try {
-                    deleteURLInDB(nextURLID - 1);
+                    System.out.println("remove " + Integer.toString(nextURLID-1));
+                    deleteURLInDB(nextURLID-1);
                 } catch (SQLException ee) {
                     ee.printStackTrace();
                 }
@@ -220,10 +237,15 @@ public class Crawler
         try {
             crawler.readProperties();
             crawler.createDB();
-            // crawler.grabURLInDB(999);
-            while (crawler.curr != null && nextURLID < nextURLIDScanned) {
-                System.out.println(nextURLID + " " + nextURLIDScanned + " " + crawler.curr);
-                crawler.fetchURL(crawler.curr);
+            // crawler.openConnection();
+            // crawler.grabURLInDB(1562);
+            // nextURLID = 1563;
+            // nextURLIDScanned = 3446;
+            while (nextURLID < nextURLIDScanned) {
+                if (crawler.curr != null) {
+                    System.out.println(nextURLID + " " + nextURLIDScanned + " " + crawler.curr);
+                    crawler.fetchURL(crawler.curr);
+                }
                 crawler.grabURLInDB(nextURLID);
                 nextURLID++;
             }
