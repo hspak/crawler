@@ -46,8 +46,7 @@ public class Crawler
         in.close();
     }
 
-    public void openConnection() throws SQLException, IOException
-    {
+    public void openConnection() throws SQLException, IOException {
         String drivers = props.getProperty("jdbc.drivers");
         if (drivers != null) System.setProperty("jdbc.drivers", drivers);
         String url = props.getProperty("jdbc.url");
@@ -56,8 +55,7 @@ public class Crawler
         connection = DriverManager.getConnection(url, username, password);
     }
 
-    public void createDB() throws SQLException, IOException
-    {
+    public void createDB() throws SQLException, IOException {
         this.openConnection();
         Statement stat = connection.createStatement();
 
@@ -73,167 +71,172 @@ public class Crawler
         stat.executeUpdate("CREATE TABLE words (word VARCHAR(100), urlid INT)");
     }
 
-    public void insertWordTable(int urlid, String desc) throws SQLException, IOException
-    {
-        Statement stat = connection.createStatement();
-        String[] split = desc.split(" ");
-        String query = "";
-        for (String w: split) {
-            if (w.length() <= 1) {
-                continue;
-            } else if (w.length() > 100) {
-                w = w.substring(0, 99);
+    public void insertWordTable(int urlid, String desc) {
+        try {
+            desc = desc.replaceAll("[^A-Za-z0-9 ]", "");
+            Statement stat = connection.createStatement();
+            String[] split = desc.split(" ");
+            String query = "";
+            for (String w: split) {
+                if (w.length() <= 1) {
+                    continue;
+                } else if (w.length() > 100) {
+                    w = w.substring(0, 99);
+                }
+                w = w.toLowerCase();
+                query += "('" + w + "'," + "'" + Integer.toString(urlid) + "'), ";
             }
-            query += "('" + w + "'," + "'" + Integer.toString(urlid) + "'), ";
-        }
-        if (query.length() > 2) {
-            query = query.substring(0, query.length()-2);
-            query = "INSERT INTO words(word, urlid) values" + query + ";";
-            stat.executeUpdate(query);
+            if (query.length() > 2) {
+                query = query.substring(0, query.length()-2);
+                query = "INSERT INTO words(word, urlid) values" + query + ";";
+                stat.executeUpdate(query);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
         }
     }
 
-    public boolean urlInDB(String urlFound) throws SQLException, IOException {
-        Statement stat = connection.createStatement();
-        ResultSet result = stat.executeQuery( "SELECT * FROM urls WHERE url LIKE '"+urlFound+"'");
-
-        if (result.next()) {
-            return true;
+    public boolean urlInDB(String urlFound) {
+        try {
+            Statement stat = connection.createStatement();
+            ResultSet result = stat.executeQuery( "SELECT * FROM urls WHERE url LIKE '"+urlFound+"'");
+            return result.next();
+        } catch (SQLException e) {
+            e.printStackTrace();
         }
         return false;
     }
 
-    public void deleteURLInDB(int urlid) throws SQLException, IOException {
-       Statement stat = connection.createStatement();
-        String query = "DELETE FROM urls WHERE urlid='" + urlid + "'";
-        stat.executeUpdate(query);
-    }
-
-    public void insertURLInDB(String url) throws SQLException, IOException {
-        Statement stat = connection.createStatement();
-        String query = "INSERT INTO urls(urlid, url) VALUES ('" + urlID + "','" + url + "');";
-        stat.executeUpdate(query);
-        this.urlID++;
-    }
-
-    public void insertImageInDB(int urlid, String imageSrc) throws SQLException, IOException {
-        Statement stat = connection.createStatement();
-        String query = "UPDATE urls SET image='" + imageSrc + "' WHERE urlid='" + urlid + "';";
-        stat.executeUpdate(query);
-    }
-
-    public void insertDescInDB(int urlid, String desc) throws SQLException, IOException {
-        Statement stat = connection.createStatement();
-        String query = "UPDATE urls SET description='" + desc + "' WHERE urlid='" + urlid + "';";
-        stat.executeUpdate(query);
-    }
-
-    public void grabURLInDB(int urlid) throws SQLException, IOException {
-        Statement stat = connection.createStatement();
-        ResultSet result = stat.executeQuery("SELECT url FROM urls WHERE urlid = " + Integer.toString(urlid));
-        if (result.next()) {
-            this.curr = result.getString("url");
-        } else {
-            this.curr = null;
+    public void deleteURLInDB(int urlid) {
+        try {
+            Statement stat = connection.createStatement();
+            String query = "DELETE FROM urls WHERE urlid='" + urlid + "'";
+            stat.executeUpdate(query);
+        } catch (SQLException e) {
+            e.printStackTrace();
         }
+    }
+
+    public void insertURLInDB(String url) {
+        try {
+            Statement stat = connection.createStatement();
+            String query = "INSERT INTO urls(urlid, url) VALUES ('" + urlID + "','" + url + "');";
+            stat.executeUpdate(query);
+            this.urlID++;
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void insertImageInDB(int urlid, String imageSrc) {
+        try {
+            Statement stat = connection.createStatement();
+            String query = "UPDATE urls SET image='" + imageSrc + "' WHERE urlid='" + urlid + "';";
+            stat.executeUpdate(query);
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void insertDescInDB(int urlid, String desc) {
+        try {
+            Statement stat = connection.createStatement();
+            String query = "UPDATE urls SET description='" + desc + "' WHERE urlid='" + urlid + "';";
+            stat.executeUpdate(query);
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void grabURLInDB(int urlid) {
+        try {
+            Statement stat = connection.createStatement();
+            ResultSet result = stat.executeQuery("SELECT url FROM urls WHERE urlid = " + Integer.toString(urlid));
+            if (result.next()) {
+                this.curr = result.getString("url");
+            } else {
+                this.curr = null;
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public boolean goodURL(String url) {
+        return
+            !url.contains("#") &&
+            !url.contains(".pdf") &&
+            !url.contains(".PDF") &&
+            !url.contains(".jpg") &&
+            !url.contains(".JPG") &&
+            !url.contains(".doc") &&
+            !url.contains(".docx");
+    }
+
+    public void insertAllURLS(Elements links) {
+        for (Element link: links) {
+            String[] urlSplit = link.attr("abs:href").split("\\?");
+            String url = urlSplit[0].replace(" ", "%20").replace("'", "\\");
+            if (!urlInDB(url) && url.contains(this.domain) && url.contains("http") && goodURL(url)) {
+                insertURLInDB(url);
+                nextURLIDScanned++;
+                if (nextURLIDScanned > this.maxURL) {
+                    break;
+                }
+            }
+        }
+    }
+
+    public void insertImage(Elements images) {
+        Element image = images.first();
+        if (image != null) {
+            String imageURL = image.absUrl("src");
+            if (imageURL.equals("https://www.cs.purdue.edu/images/logo.svg")) {
+                if (images.size() > 2) {
+                    Element noLogo = images.get(2);
+                    if (image != null) {
+                        imageURL = noLogo.absUrl("src");
+                    }
+                } else {
+                    Element noLogo = images.get(1);
+                    if (image != null) {
+                        imageURL = noLogo.absUrl("src");
+                    }
+                }
+            }
+            imageURL = imageURL.replace(" ", "%20");
+            imageURL = imageURL.replace("'", "\\'");
+            insertImageInDB(nextURLID-1, imageURL);
+        }
+    }
+
+    public void insertDesc(String desc) {
+        desc = desc.replaceAll("[^A-Za-z0-9 ]", "");
+        int len = desc.length();
+        if (len > 200) {
+            len = 200;
+        }
+        String save = desc.substring(0, len);
+        this.insertDescInDB(nextURLID - 1, save);
     }
 
     public void fetchURL(String urlScanned) {
         try {
-            try {
-                urlScanned = urlScanned.replace("\\", "");
-                Document doc = Jsoup.connect(urlScanned).ignoreContentType(false).timeout(5000).get();
+            urlScanned = urlScanned.replace("\\", "");
+            Document doc = Jsoup.connect(urlScanned).ignoreContentType(false).timeout(5000).get();
 
-                // grab all links
-                if (nextURLIDScanned < this.maxURL) {
-                    Elements links = doc.select("a[href]");
-                    for (Element link: links) {
-                        String rawUrl = link.attr("abs:href");
-                        String[] urlSplit = rawUrl.split("\\?");
-                        String url = urlSplit[0];
-                        url = url.replace(" ", "%20");
-                        url = url.replace("'", "\\'");
-                        try {
-                            if (!urlInDB(url) && url.contains(this.domain) &&
-                                url.contains("http") && !url.contains("#") && !url.contains(".pdf") && !url.contains(".jpg")) {
-                                insertURLInDB(url);
-                                nextURLIDScanned++;
-                                if (nextURLIDScanned > this.maxURL) {
-                                    break;
-                                }
-                            }
-                        } catch (SQLException e) {
-                            e.printStackTrace();
-                        }
-                    }
-                }
-
-                if (nextURLID != 0) {
-                    // image stuff
-                    Element image = doc.select("img").first();
-                    if (image != null) {
-                        String imageURL = image.absUrl("src");
-                        if (imageURL.equals("https://www.cs.purdue.edu/images/logo.svg")) {
-                            if (doc.select("img").size() > 2) {
-                                Element noLogo = doc.select("img").get(2);
-                                if (image != null) {
-                                    imageURL = noLogo.absUrl("src");
-                                }
-                            } else {
-                                Element noLogo = doc.select("img").get(1);
-                                if (image != null) {
-                                    imageURL = noLogo.absUrl("src");
-                                }
-                            }
-                        }
-
-                        try {
-                            imageURL = imageURL.replace(" ", "%20");
-                            imageURL = imageURL.replace("'", "\\'");
-                            this.insertImageInDB(nextURLID - 1, imageURL);
-                        } catch (SQLException e) {
-                            e.printStackTrace();
-                        }
-                    }
-
-                    // grab description
-                    String title = doc.select("title").text().replaceAll("[^A-Za-z0-9 ]", ""); ;
-                    String p = doc.select("p").text().replaceAll("[^A-Za-z0-9 ]", ""); ;
-                    String fullBody = doc.select("body").text().replaceAll("[^A-Za-z0-9 ]", ""); ;
-                    int titleLen = title.length();
-                    int pLen = p.length();
-
-                    if (titleLen > 45 && pLen > 10) {
-                        titleLen = 45;
-                    } else if (titleLen > 197) {
-                        titleLen = 197;
-                    }
-
-                    if (pLen > 152) {
-                        pLen = 152;
-                    }
-
-                    String save = title.substring(0, titleLen) + " " + p.substring(0, pLen);
-                    try {
-                        this.insertDescInDB(nextURLID - 1, save);
-                        this.insertWordTable(nextURLID - 1, fullBody);
-                    } catch (SQLException e) {
-                        e.printStackTrace();
-                    }
-                }
-            } catch (org.jsoup.HttpStatusException
-                    |org.jsoup.UnsupportedMimeTypeException
-                    |java.lang.IllegalArgumentException
-                    |java.net.UnknownHostException e) {
-                try {
-                    System.out.println("remove " + Integer.toString(nextURLID-1));
-                    deleteURLInDB(nextURLID-1);
-                } catch (SQLException ee) {
-                    ee.printStackTrace();
-                }
+            if (nextURLIDScanned < this.maxURL) {
+                insertAllURLS(doc.select("a[href]"));
             }
-        } catch (IOException e) {
-            e.printStackTrace();
+
+            if (nextURLID != 0) {
+                insertImage(doc.select("img"));
+                insertDesc(doc.select("p").text());
+                insertWordTable(nextURLID - 1, doc.select("body").text());
+            }
+        } catch (Exception e) {
+            System.out.println("remove " + Integer.toString(nextURLID-1));
+            deleteURLInDB(nextURLID-1);
         }
     }
 
