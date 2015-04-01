@@ -1,0 +1,18 @@
+<!doctype html>
+<html>
+  <head>
+    <title>CS 390 Search</title>
+  </head>
+  <body>
+    <form action="search">
+      <input type="text" name="keywords"></input>
+      <input type="submit" id="search"></input>
+    </form>
+    <p>Found $count links</p>
+    #foreach($l in $links)
+      <li>$l.getUrl()</li>
+      <li>$l.getDesc()</li>
+      <li>$l.getImage()</li>
+    #end
+  </body>
+</html>

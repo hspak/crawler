@@ -45,16 +45,15 @@ class Results
         try {
             urlid = new ArrayList<>();
             Statement stat = connection.createStatement();
-            String query = "SELECT urlid FROM words WHERE ";
+            String query = "SELECT urlid FROM words WHERE word IN(";
             for (String keyword: keywords) {
-                query += "word='" + keyword + "' AND ";
+                query += "'" + keyword + "', ";
             }
-            query = query.substring(0, query.length()-5);
-            query += ";";
+            query = query.substring(0, query.length()-2);
+            query += ") GROUP BY urlid HAVING count(*)=" + keywords.length + ";";
             System.out.println(query);
             ResultSet result = stat.executeQuery(query);
             while (result.next()) {
-                System.out.println("words: " + result.getInt("urlid"));
                 urlid.add(result.getInt("urlid"));
             }
         } catch (SQLException e) {
@@ -90,9 +89,8 @@ class Results
 
     public void querySearch(String keywordsRaw) {
         keywordsRaw = keywordsRaw.toLowerCase();
-        String[] keywords = keywordsRaw.split("\\+");
+        String[] keywords = keywordsRaw.split(" ");
         for (int i = 0; i < keywords.length; i++) {
-            keywords[i] = keywords[i].replaceAll("%2B", "+");
             keywords[i] = keywords[i].replaceAll("''", "");
         }
 
