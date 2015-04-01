@@ -176,6 +176,7 @@ public class Crawler
             !url.contains(".doc") &&
             !url.contains(".ppt") &&
             !url.contains(".txt") &&
+            !url.contains(".gif") &&
             !url.contains(".m") &&
             !url.contains(".v") &&
             !url.contains(".docx");
@@ -191,7 +192,7 @@ public class Crawler
             if (url.substring(url.length()-1).equals("/"))
                 url = url.substring(0, url.length()-1);
 
-            if (!urlInDB(url) && url.contains(this.domain) && url.contains("http") && goodURL(url)) {
+            if (url.contains(this.domain) && url.contains("http") && goodURL(url) && !urlInDB(url)) {
                 insertURLInDB(url);
                 nextURLIDScanned++;
                 if (nextURLIDScanned > this.maxURL) {
@@ -243,9 +244,11 @@ public class Crawler
     public void fetchURL(String urlScanned) {
         try {
             urlScanned = urlScanned.replace("\\", "");
-            Response res = Jsoup.connect(urlScanned).ignoreContentType(false).timeout(5000).execute();
+            Response res = Jsoup.connect(urlScanned).ignoreContentType(false).timeout(3000).execute();
             if (!res.contentType().contains("text/html") && !res.contentType().contains("text/plain")) {
                 System.out.println("==> bad content-type: " + res.contentType());
+                deleteURLInDB(nextURLID-1);
+                return;
             }
 
             Document doc = res.parse();
