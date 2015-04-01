@@ -1,0 +1,4 @@
+#!/bin/bash
+
+javac -cp '.:./spark-core-2.1.jar:./slf4j-1.7.12/*:./jetty/*' HelloWorld.java
+java -cp '.:./spark-core-2.1.jar:./slf4j-1.7.12/*:./jetty/*' HelloWorld
