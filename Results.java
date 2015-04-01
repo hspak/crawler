@@ -49,6 +49,31 @@ class Results
             for (String keyword: keywords) {
                 query += "word='" + keyword + "' AND ";
             }
+            query = query.substring(0, query.length()-5);
+            query += ";";
+            System.out.println(query);
+            ResultSet result = stat.executeQuery(query);
+            while (result.next()) {
+                System.out.println("words: " + result.getInt("urlid"));
+                urlid.add(result.getInt("urlid"));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void getUrlidInfo() {
+        if (urlid.size() == 0) {
+            System.out.println("urlid.size = 0");
+            return;
+        }
+
+        try {
+            Statement stat = connection.createStatement();
+            String query = "SELECT * FROM urls WHERE ";
+            for (int i = 0; i < urlid.size(); i++) {
+                query += "urlid='" + urlid.get(i) + "' OR ";
+            }
             query = query.substring(0, query.length()-4);
             query += ";";
             System.out.println(query);
@@ -63,29 +88,14 @@ class Results
         }
     }
 
-    public void getUrlidInfo() {
-        try {
-            Statement stat = connection.createStatement();
-            String query = "SELECT * FROM urls WHERE ";
-            for (int i = 0; i < urlid.size(); i++) {
-                query += "urlid='" + urlid.get(i) + "' AND ";
-            }
-            query = query.substring(0, query.length()-4);
-            query += ";";
-            System.out.println(query);
-            ResultSet result = stat.executeQuery(query);
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-    }
-
     public void querySearch(String keywordsRaw) {
         keywordsRaw = keywordsRaw.toLowerCase();
-        String[] keywords = keywordsRaw.split("+");
+        String[] keywords = keywordsRaw.split("\\+");
         for (int i = 0; i < keywords.length; i++) {
             keywords[i] = keywords[i].replaceAll("%2B", "+");
             keywords[i] = keywords[i].replaceAll("''", "");
         }
         setUrlidFromWords(keywords);
+        getUrlidInfo();
     }
 }

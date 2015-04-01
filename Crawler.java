@@ -145,7 +145,7 @@ public class Crawler
             Statement stat = connection.createStatement();
             String[] split = desc.split(" ");
             String query = "";
-            HashMap<String, int> wordTable = new HashMap<>();
+            HashMap<String, Integer> wordTable = new HashMap<>();
             for (String w: split) {
                 if (w.length() <= 1) {
                     continue;
@@ -153,12 +153,12 @@ public class Crawler
                     w = w.substring(0, 99);
                 }
                 w = w.toLowerCase();
-                wordTable[w] = urlid;
+                wordTable.put(w, urlid);
             }
 
-            Set<string> keys = wordTable.keySet();
+            Set<String> keys = wordTable.keySet();
             for (String k: keys) {
-                query += "('" + w + "'," + "'" + Integer.toString(wordTable[k]) + "'), ";
+                query += "('" + k + "'," + "'" + Integer.toString(wordTable.get(k)) + "'), ";
             }
 
             if (query.length() > 2) {
@@ -188,6 +188,20 @@ public class Crawler
             !url.contains(".docx");
     }
 
+    public boolean isLinkLive(String url) {
+        try {
+            URL u = new URL(url);
+            HttpURLConnection conn = (HttpURLConnection) u.openConnection();
+            conn.setRequestMethod("HEAD");
+            conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10.5; en-US; rv:1.9.0.13) Gecko/2009073021 Firefox/3.0.13");
+            conn.connect();
+            return conn.getResponseCode() == 200;
+        } catch(Exception e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
     // grabs all valid anchor links and inserts in DB
     public void insertAllURLS(Elements links) {
         for (Element link: links) {
@@ -198,7 +212,7 @@ public class Crawler
             if (url.substring(url.length()-1).equals("/"))
                 url = url.substring(0, url.length()-1);
 
-            if (url.contains(this.domain) && url.contains("http") && goodURL(url) && !urlInDB(url)) {
+            if (url.contains(this.domain) && url.contains("http") && goodURL(url) && isLinkLive(url) && !urlInDB(url)) {
                 insertURLInDB(url);
                 nextURLIDScanned++;
                 if (nextURLIDScanned > this.maxURL) {
