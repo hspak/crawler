@@ -2,13 +2,9 @@
 
 # javac Crawler.java
 echo "Compiling..."
-javac -cp \
-  '.:./mysql-connector-java-3.1.15-bin.jar:./mariadb-java-client-1.1.8.jar:./jsoup-1.7.2.jar' \
-  Crawler.java
+javac -cp '.:./jar/*' Crawler.java
 
 (( $# == 0 )) && exit 0
 
 echo "Running..."
-java -cp \
-  '.:./mysql-connector-java-3.1.15-bin.jar:./mariadb-java-client-1.1.8.jar:./jsoup-1.7.2.jar' \
-  Crawler "$@"
+java -cp '.:./jar/*' Crawler

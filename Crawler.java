@@ -145,6 +145,7 @@ public class Crawler
             Statement stat = connection.createStatement();
             String[] split = desc.split(" ");
             String query = "";
+            HashMap<String, int> wordTable = new HashMap<>();
             for (String w: split) {
                 if (w.length() <= 1) {
                     continue;
@@ -152,7 +153,12 @@ public class Crawler
                     w = w.substring(0, 99);
                 }
                 w = w.toLowerCase();
-                query += "('" + w + "'," + "'" + Integer.toString(urlid) + "'), ";
+                wordTable[w] = urlid;
+            }
+
+            Set<string> keys = wordTable.keySet();
+            for (String k: keys) {
+                query += "('" + w + "'," + "'" + Integer.toString(wordTable[k]) + "'), ";
             }
 
             if (query.length() > 2) {

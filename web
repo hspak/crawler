@@ -1,0 +1,5 @@
+#!/bin/bash
+
+javac -cp '.:./jar/*:./jar/slf4j-1.7.12/*:./jar/jetty/*' Search.java
+(( $# == 0 )) && exit 0
+java -cp '.:./jar/*:./jar/slf4j-1.7.12/*:./jar/jetty/*' Search
