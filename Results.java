@@ -9,7 +9,6 @@ class Results
     public List<String> desc;
     public List<String> url;
     public List<String> image;
-    List<Integer> urlid;
     Connection connection;
     public Properties props;
 
@@ -17,7 +16,6 @@ class Results
         desc = new ArrayList<>();
         url = new ArrayList<>();
         image = new ArrayList<>();
-        urlid = new ArrayList<>();
         connection = null;
     }
 
@@ -42,8 +40,10 @@ class Results
         }
     }
 
-    public void setUrlidFromWords(String[] keywords) {
+    public List<Integer> setUrlidFromWords(String[] keywords) {
+        List<Integer> urlid = null;
         try {
+            urlid = new ArrayList<>();
             Statement stat = connection.createStatement();
             String query = "SELECT urlid FROM words WHERE ";
             for (String keyword: keywords) {
@@ -60,22 +60,22 @@ class Results
         } catch (SQLException e) {
             e.printStackTrace();
         }
+        return urlid;
     }
 
-    public void getUrlidInfo() {
+    public void getUrlidInfo(List<Integer> urlid) {
         if (urlid.size() == 0) {
-            System.out.println("urlid.size = 0");
             return;
         }
 
         try {
             Statement stat = connection.createStatement();
-            String query = "SELECT * FROM urls WHERE ";
+            String query = "SELECT * FROM urls WHERE urlid IN(";
             for (int i = 0; i < urlid.size(); i++) {
-                query += "urlid='" + urlid.get(i) + "' OR ";
+                query += urlid.get(i) + ", ";
             }
-            query = query.substring(0, query.length()-4);
-            query += ";";
+            query = query.substring(0, query.length()-2);
+            query += ");";
             System.out.println(query);
             ResultSet result = stat.executeQuery(query);
             while (result.next()) {
@@ -95,7 +95,13 @@ class Results
             keywords[i] = keywords[i].replaceAll("%2B", "+");
             keywords[i] = keywords[i].replaceAll("''", "");
         }
-        setUrlidFromWords(keywords);
-        getUrlidInfo();
+
+        desc.clear();
+        image.clear();
+        url.clear();
+        List<Integer> urlid = setUrlidFromWords(keywords);
+        if (urlid != null) {
+            getUrlidInfo(urlid);
+        }
     }
 }
