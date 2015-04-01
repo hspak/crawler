@@ -9,6 +9,7 @@ import org.jsoup.helper.Validate;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
+import org.jsoup.Connection.*;
 
 public class Crawler
 {
@@ -174,6 +175,9 @@ public class Crawler
             !url.contains(".JPG") &&
             !url.contains(".doc") &&
             !url.contains(".ppt") &&
+            !url.contains(".txt") &&
+            !url.contains(".m") &&
+            !url.contains(".v") &&
             !url.contains(".docx");
     }
 
@@ -239,8 +243,12 @@ public class Crawler
     public void fetchURL(String urlScanned) {
         try {
             urlScanned = urlScanned.replace("\\", "");
-            Document doc = Jsoup.connect(urlScanned).ignoreContentType(false).timeout(5000).get();
+            Response res = Jsoup.connect(urlScanned).ignoreContentType(false).timeout(5000).execute();
+            if (!res.contentType().equals("text/html") && !res.contentType().equals("text/plain")) {
+                System.out.println("==> bad content-type: " + res.contentType());
+            }
 
+            Document doc = res.parse();
             if (nextURLIDScanned < this.maxURL) {
                 insertAllURLS(doc.select("a[href]"));
             }
@@ -253,7 +261,7 @@ public class Crawler
             }
         } catch (Exception e) {
             // most likely a timeout or not html/text
-            System.out.println("remove " + Integer.toString(nextURLID-1));
+            System.out.println("==> remove " + Integer.toString(nextURLID-1));
             deleteURLInDB(nextURLID-1);
         }
     }
