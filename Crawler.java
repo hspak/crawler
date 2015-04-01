@@ -71,31 +71,6 @@ public class Crawler
         stat.executeUpdate("CREATE TABLE words (word VARCHAR(100), urlid INT)");
     }
 
-    public void insertWordTable(int urlid, String desc) {
-        try {
-            desc = desc.replaceAll("[^A-Za-z0-9 ]", "");
-            Statement stat = connection.createStatement();
-            String[] split = desc.split(" ");
-            String query = "";
-            for (String w: split) {
-                if (w.length() <= 1) {
-                    continue;
-                } else if (w.length() > 100) {
-                    w = w.substring(0, 99);
-                }
-                w = w.toLowerCase();
-                query += "('" + w + "'," + "'" + Integer.toString(urlid) + "'), ";
-            }
-            if (query.length() > 2) {
-                query = query.substring(0, query.length()-2);
-                query = "INSERT INTO words(word, urlid) values" + query + ";";
-                stat.executeUpdate(query);
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-    }
-
     public boolean urlInDB(String urlFound) {
         try {
             Statement stat = connection.createStatement();
@@ -162,6 +137,34 @@ public class Crawler
         }
     }
 
+    // grab the entire page, remove special characters and insert with a giant query
+    public void insertWordTable(int urlid, String desc) {
+        try {
+            desc = desc.replaceAll("[^A-Za-z0-9 ]", "");
+            Statement stat = connection.createStatement();
+            String[] split = desc.split(" ");
+            String query = "";
+            for (String w: split) {
+                if (w.length() <= 1) {
+                    continue;
+                } else if (w.length() > 100) {
+                    w = w.substring(0, 99);
+                }
+                w = w.toLowerCase();
+                query += "('" + w + "'," + "'" + Integer.toString(urlid) + "'), ";
+            }
+
+            if (query.length() > 2) {
+                query = query.substring(0, query.length()-2);
+                query = "INSERT INTO words(word, urlid) values" + query + ";";
+                stat.executeUpdate(query);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    // not necessary, but speeds up crawling since I don't parse the links before adding to the DB
     public boolean goodURL(String url) {
         return
             !url.contains("#") &&
@@ -170,9 +173,11 @@ public class Crawler
             !url.contains(".jpg") &&
             !url.contains(".JPG") &&
             !url.contains(".doc") &&
+            !url.contains(".ppt") &&
             !url.contains(".docx");
     }
 
+    // grabs all valid anchor links and inserts in DB
     public void insertAllURLS(Elements links) {
         for (Element link: links) {
             String[] urlSplit = link.attr("abs:href").split("\\?");
@@ -187,6 +192,7 @@ public class Crawler
         }
     }
 
+    // first two images are generally the Purdue logos, avoid if possible
     public void insertImage(Elements images) {
         Element image = images.first();
         if (image != null) {
@@ -204,20 +210,25 @@ public class Crawler
                     }
                 }
             }
+            // spaces for URL, apostrphes for SQL
             imageURL = imageURL.replace(" ", "%20");
             imageURL = imageURL.replace("'", "\\'");
             insertImageInDB(nextURLID-1, imageURL);
         }
     }
 
-    public void insertDesc(String desc) {
+    // fallback = whole body if there is insufficient paragraphs tags
+    public void insertDesc(String desc, String fallback) {
         desc = desc.replaceAll("[^A-Za-z0-9 ]", "");
         int len = desc.length();
         if (len > 200) {
             len = 200;
+        } else if (len < 100) {
+            desc = fallback.replaceAll("[^A-Za-z0-9 ]", "");
+            if (desc.length() > 200) len = 200;
         }
         String save = desc.substring(0, len);
-        this.insertDescInDB(nextURLID - 1, save);
+        insertDescInDB(nextURLID-1, save);
     }
 
     public void fetchURL(String urlScanned) {
@@ -229,12 +240,14 @@ public class Crawler
                 insertAllURLS(doc.select("a[href]"));
             }
 
+            // ignore the root link
             if (nextURLID != 0) {
                 insertImage(doc.select("img"));
-                insertDesc(doc.select("p").text());
+                insertDesc(doc.select("p").text(), doc.select("body").text());
                 insertWordTable(nextURLID - 1, doc.select("body").text());
             }
         } catch (Exception e) {
+            // most likely a timeout or not html/text
             System.out.println("remove " + Integer.toString(nextURLID-1));
             deleteURLInDB(nextURLID-1);
         }
@@ -247,6 +260,8 @@ public class Crawler
             crawler.readProperties();
             crawler.createDB();
             crawler.openConnection();
+
+            // loop as long as we have more URLS in the DB
             while (nextURLID < nextURLIDScanned) {
                 if (crawler.curr != null) {
                     System.out.println("(next: " + nextURLID + " scanned: " + nextURLIDScanned + ") " + "id: " + crawler.urlID + " " + crawler.curr);
