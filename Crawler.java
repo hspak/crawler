@@ -107,7 +107,6 @@ public class Crawler
        Statement stat = connection.createStatement();
         String query = "DELETE FROM urls WHERE urlid='" + urlid + "'";
         stat.executeUpdate(query);
-        this.urlID++;
     }
 
     public void insertURLInDB(String url) throws SQLException, IOException {
@@ -129,9 +128,9 @@ public class Crawler
         stat.executeUpdate(query);
     }
 
-    public void grabURLInDB(int URLID) throws SQLException, IOException {
+    public void grabURLInDB(int urlid) throws SQLException, IOException {
         Statement stat = connection.createStatement();
-        ResultSet result = stat.executeQuery("SELECT url FROM urls WHERE urlid = " + Integer.toString(URLID));
+        ResultSet result = stat.executeQuery("SELECT url FROM urls WHERE urlid = " + Integer.toString(urlid));
         if (result.next()) {
             this.curr = result.getString("url");
         } else {
@@ -142,20 +141,23 @@ public class Crawler
     public void fetchURL(String urlScanned) {
         try {
             try {
+                urlScanned = urlScanned.replace("\\", "");
                 Document doc = Jsoup.connect(urlScanned).ignoreContentType(false).timeout(5000).get();
 
                 // grab all links
                 if (nextURLIDScanned < this.maxURL) {
                     Elements links = doc.select("a[href]");
                     for (Element link: links) {
-                        String url = link.attr("abs:href");
+                        String rawUrl = link.attr("abs:href");
+                        String[] urlSplit = rawUrl.split("\\?");
+                        String url = urlSplit[0];
+                        url = url.replace(" ", "%20");
+                        url = url.replace("'", "\\'");
                         try {
-                            url = url.replace(" ", "%20");
-                            url = url.replace("'", "\\'");
-                            if (!urlInDB(url) && url.contains(this.domain) && url.contains("http") && !url.contains("#")) {
+                            if (!urlInDB(url) && url.contains(this.domain) &&
+                                url.contains("http") && !url.contains("#") && !url.contains(".pdf") && !url.contains(".jpg")) {
                                 insertURLInDB(url);
                                 nextURLIDScanned++;
-                                System.out.println("add " + nextURLIDScanned);
                                 if (nextURLIDScanned > this.maxURL) {
                                     break;
                                 }
@@ -186,6 +188,8 @@ public class Crawler
                         }
 
                         try {
+                            imageURL = imageURL.replace(" ", "%20");
+                            imageURL = imageURL.replace("'", "\\'");
                             this.insertImageInDB(nextURLID - 1, imageURL);
                         } catch (SQLException e) {
                             e.printStackTrace();
@@ -217,7 +221,10 @@ public class Crawler
                         e.printStackTrace();
                     }
                 }
-            } catch (org.jsoup.HttpStatusException|org.jsoup.UnsupportedMimeTypeException e) {
+            } catch (org.jsoup.HttpStatusException
+                    |org.jsoup.UnsupportedMimeTypeException
+                    |java.lang.IllegalArgumentException
+                    |java.net.UnknownHostException e) {
                 try {
                     System.out.println("remove " + Integer.toString(nextURLID-1));
                     deleteURLInDB(nextURLID-1);
@@ -236,13 +243,10 @@ public class Crawler
         try {
             crawler.readProperties();
             crawler.createDB();
-            // crawler.openConnection();
-            // crawler.grabURLInDB(1562);
-            // nextURLID = 1563;
-            // nextURLIDScanned = 3446;
+            crawler.openConnection();
             while (nextURLID < nextURLIDScanned) {
                 if (crawler.curr != null) {
-                    System.out.println(nextURLID + " " + nextURLIDScanned + " " + crawler.curr);
+                    System.out.println("(next: " + nextURLID + " scanned: " + nextURLIDScanned + ") " + "id: " + crawler.urlID + " " + crawler.curr);
                     crawler.fetchURL(crawler.curr);
                 }
                 crawler.grabURLInDB(nextURLID);

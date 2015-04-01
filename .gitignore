@@ -5,3 +5,5 @@ out
 *.log
 logs
 err
+*.DS_Store
+spark-master

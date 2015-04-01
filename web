@@ -1,4 +1,0 @@
-#!/bin/bash
-
-catalina stop
-CATALINA_BASE="$PWD/tomcat" CATALINA_HOME="$PWD/tomcat" CATALINA_TMPDIR="$PWD/tomcat/temp" catalina start
