@@ -244,7 +244,7 @@ public class Crawler
         try {
             urlScanned = urlScanned.replace("\\", "");
             Response res = Jsoup.connect(urlScanned).ignoreContentType(false).timeout(5000).execute();
-            if (!res.contentType().equals("text/html") && !res.contentType().equals("text/plain")) {
+            if (!res.contentType().contains("text/html") && !res.contentType().contains("text/plain")) {
                 System.out.println("==> bad content-type: " + res.contentType());
             }
 
