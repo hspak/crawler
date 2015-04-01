@@ -182,6 +182,11 @@ public class Crawler
         for (Element link: links) {
             String[] urlSplit = link.attr("abs:href").split("\\?");
             String url = urlSplit[0].replace(" ", "%20").replace("'", "\\");
+
+            // prevent duplicates because of this slash
+            if (url.substring(url.length()-1).equals("/"))
+                url = url.substring(0, url.length()-1);
+
             if (!urlInDB(url) && url.contains(this.domain) && url.contains("http") && goodURL(url)) {
                 insertURLInDB(url);
                 nextURLIDScanned++;
@@ -227,7 +232,7 @@ public class Crawler
             desc = fallback.replaceAll("[^A-Za-z0-9 ]", "");
             if (desc.length() > 200) len = 200;
         }
-        String save = desc.substring(0, len);
+        String save = desc.substring(0, len-1);
         insertDescInDB(nextURLID-1, save);
     }
 
