@@ -35,7 +35,13 @@
       </ol>
 
       <div class="pages">
-        <span class="pages-title">Current Page:</span>
+        #if ($count > 0)
+          <span class="pages-title">Current Page:</span>
+        #else
+          <span class="pages-title">Nothing...</span>
+          <br>
+          <img src="http://i.imgur.com/7xKs11T.gif">
+        #end
         #foreach($p in $pages)
           #if ($curr != $velocityCount)
             <a href="$p.getLink()">
