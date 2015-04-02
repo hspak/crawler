@@ -5,10 +5,18 @@
   </head>
   <body>
     <form action="search">
+      <input type="hidden" value="0" name="start" id="start"></input>
       <input type="text" name="keywords"></input>
-      <input type="submit" id="search"></input>
+      <input type="submit" name="search"></input>
     </form>
     <p>Found $count links</p>
+    #foreach($p in $pages)
+      #if ($curr != $velocityCount)
+        <a href="$p.getLink()">$p.getText()</a>
+      #else
+        <span>$p.getText()</span>
+      #end
+    #end
     #foreach($l in $links)
       <li>$l.getUrl()</li>
       <li>$l.getDesc()</li>

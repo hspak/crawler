@@ -29,7 +29,7 @@ public class Crawler
         nextURLIDScanned = 0;
 
         urlID = 0;
-        maxURL = 100000;
+        maxURL = 1000000;
         root = null;
         domain = null;
         curr = null;
@@ -188,31 +188,33 @@ public class Crawler
             !url.contains(".docx");
     }
 
-    public boolean isLinkLive(String url) {
-        try {
-            URL u = new URL(url);
-            HttpURLConnection conn = (HttpURLConnection) u.openConnection();
-            conn.setRequestMethod("HEAD");
-            conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10.5; en-US; rv:1.9.0.13) Gecko/2009073021 Firefox/3.0.13");
-            conn.connect();
-            return conn.getResponseCode() == 200;
-        } catch(Exception e) {
-            e.printStackTrace();
-        }
-        return false;
-    }
+    /*
+     * public boolean isLinkLive(String url) {
+     *     try {
+     *         URL u = new URL(url);
+     *         HttpURLConnection conn = (HttpURLConnection) u.openConnection();
+     *         conn.setRequestMethod("HEAD");
+     *         conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10.5; en-US; rv:1.9.0.13) Gecko/2009073021 Firefox/3.0.13");
+     *         conn.connect();
+     *         return conn.getResponseCode() == 200;
+     *     } catch(Exception e) {
+     *         e.printStackTrace();
+     *     }
+     *     return false;
+     * }
+     */
 
     // grabs all valid anchor links and inserts in DB
     public void insertAllURLS(Elements links) {
         for (Element link: links) {
             String[] urlSplit = link.attr("abs:href").split("\\?");
-            String url = urlSplit[0].replace(" ", "%20").replace("'", "\\");
+            String url = urlSplit[0].replace(" ", "%20").replace("'", "\\'");
 
             // prevent duplicates because of this slash
             if (url.substring(url.length()-1).equals("/"))
                 url = url.substring(0, url.length()-1);
 
-            if (url.contains(this.domain) && url.contains("http") && goodURL(url) && isLinkLive(url) && !urlInDB(url)) {
+            if (url.contains(this.domain) && url.contains("http") && goodURL(url) && !urlInDB(url)) {
                 insertURLInDB(url);
                 nextURLIDScanned++;
                 if (nextURLIDScanned > this.maxURL) {
@@ -280,7 +282,7 @@ public class Crawler
             if (nextURLID != 0) {
                 insertImage(doc.select("img"));
                 insertDesc(doc.select("p").text(), doc.select("body").text());
-                insertWordTable(nextURLID - 1, doc.select("body").text());
+                insertWordTable(nextURLID-1, doc.select("body").text());
             }
         } catch (Exception e) {
             // most likely a timeout or not html/text

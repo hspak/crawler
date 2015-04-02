@@ -10,6 +10,23 @@ import spark.template.velocity.VelocityTemplateEngine;
 import static spark.Spark.*;
 
 public class Search {
+    public static class Page {
+        private String link;
+        private String text;
+        
+        public Page(String link, String text) {
+            this.link = link;
+            this.text = text;
+        }
+
+        public String getLink() {
+            return link;
+        }
+        public String getText() {
+            return text;
+        }
+    }
+
     public static class Link {
         private String url;
         private String desc;
@@ -39,20 +56,45 @@ public class Search {
 
         get("/search", (req, res) -> {
             String keywords = req.queryParams("keywords");
-            r.querySearch(keywords);
+            int start = Integer.parseInt(req.queryParams("start"));
+            r.querySearch(keywords, start);
 
             if (r.desc.size() != r.url.size() && r.url.size() != r.image.size()) {
                 return null;
             }
 
+            // generate data structure to send to template
             List<Link> links = new ArrayList<>();
+            String imageURL = "http://upload.wikimedia.org/wikipedia/commons/9/91/Arabic_Question_mark_%28RTL%29.svg";
             for (int i = 0; i < r.url.size(); i++) {
-                links.add(new Link(r.url.get(i), r.desc.get(i), r.image.get(i)));
+                if (r.image.get(i) != null) {
+                    imageURL = r.image.get(i);
+                }
+                links.add(new Link(r.url.get(i), r.desc.get(i), imageURL));
             }
 
+            // logic for pagination
+            int origStart = start/10;
+            List<Page> pages = new ArrayList<>();
+            String pageLink = "";
+            if (start > 50) {
+                start -= 50;
+                origStart = 5;
+            } else if (start < 100) {
+                start = 0;
+            }
+            for (int i = 0; i < 10; i++) {
+                pageLink = "/search?start=" + Integer.toString(start) + "&keywords=" + keywords;
+                pages.add(new Page(pageLink, Integer.toString(start/10 + 1)));
+                start += 10;
+            }
+
+            // send data to template
             Map<String, Object> model = new HashMap<>();
             model.put("links", links);
-            model.put("count", r.url.size());
+            model.put("count", r.totalCount);
+            model.put("pages", pages);
+            model.put("curr", origStart+1);
             return new ModelAndView(model, "template/search.wm");
         }, new VelocityTemplateEngine());
     }

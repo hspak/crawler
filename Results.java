@@ -9,13 +9,17 @@ class Results
     public List<String> desc;
     public List<String> url;
     public List<String> image;
+    public List<Integer> urlid;
     Connection connection;
     public Properties props;
+    public int totalCount;
 
     Results() {
         desc = new ArrayList<>();
         url = new ArrayList<>();
         image = new ArrayList<>();
+        urlid = new ArrayList<>();
+        totalCount = 0;
         connection = null;
     }
 
@@ -87,18 +91,26 @@ class Results
         }
     }
 
-    public void querySearch(String keywordsRaw) {
-        keywordsRaw = keywordsRaw.toLowerCase();
-        String[] keywords = keywordsRaw.split(" ");
-        for (int i = 0; i < keywords.length; i++) {
-            keywords[i] = keywords[i].replaceAll("''", "");
-        }
-
+    private void resetLists() {
         desc.clear();
         image.clear();
         url.clear();
-        List<Integer> urlid = setUrlidFromWords(keywords);
+        urlid.clear();
+        totalCount = 0;
+    }
+
+    public void querySearch(String keywordsRaw, int start) {
+        keywordsRaw = keywordsRaw.toLowerCase();
+        String[] keywords = keywordsRaw.split(" ");
+        for (int i = 0; i < keywords.length; i++) {
+            keywords[i] = keywords[i].replaceAll("'", "");
+        }
+
+        resetLists();
+        urlid = setUrlidFromWords(keywords);
         if (urlid != null) {
+            totalCount = urlid.size();
+            urlid = urlid.subList(start, start+10);
             getUrlidInfo(urlid);
         }
     }
