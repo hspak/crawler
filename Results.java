@@ -84,13 +84,14 @@ class Results
             System.out.println(query);
             ResultSet result = stat.executeQuery(query);
             while (result.next()) {
-                System.out.println(result.getString("description"));
                 String[] split = result.getString("description").split("\\|");
-                System.out.println(split[0]);
-                System.out.println(split[1]);
                 url.add(result.getString("url"));
                 desc.add(split[0] + "...");
-                title.add(split[1]);
+                if (split.length > 1) {
+                    title.add(split[1]);
+                } else {
+                    title.add("???");
+                }
                 image.add(result.getString("image"));
             }
         } catch (SQLException e) {

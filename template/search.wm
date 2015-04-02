@@ -2,29 +2,49 @@
 <html>
   <head>
     <title>CS 390 Search</title>
+    <link rel="stylesheet" type="text/css" href="css/search.css">
+    <link href='http://fonts.googleapis.com/css?family=Lato' rel='stylesheet' type='text/css'>
   </head>
   <body>
-    <form action="search">
-      <input type="hidden" value="0" name="start" id="start"></input>
-      <input type="text" name="keywords"></input>
-      <input type="submit" name="search"></input>
-    </form>
-    <p>Found $count links</p>
-    #foreach($p in $pages)
-      #if ($curr != $velocityCount)
-        <a href="$p.getLink()">$p.getText()</a>
-      #else
-        <span>$p.getText()</span>
-      #end
-    #end
-    #foreach($l in $links)
-      <div>
-        $velocityCount
-        <li>$l.getUrl()</li>
-        <li>$l.getTitle()</li>
-        <li>$l.getDesc()</li>
-        <li>$l.getImage()</li>
-      <div>
-    #end
+      <div class="header">
+        <div class="title">Purdue CS Search</div>
+        <div class="form">
+          <form action="search">
+            <input type="hidden" value="0" name="start"></input>
+            <input class="form-text" type="text" name="keywords"></input>
+            <input class="form-submit" type="submit" value="search"></input>
+          </form>
+        </div>
+        <div class="count">Found $count links</div>
+      </div>
+
+    <div class="container">
+      <ol>
+        #foreach($l in $links)
+          <li class="entry">
+            <div class="entry-img" style="background-image: url('$l.getImage()');"></div>
+            <a href="$l.getUrl()">
+              <div class="entry-title">$l.getTitle()</div>
+            </a>
+            <div class="entry-url">$l.getUrl()</div>
+            <div class="entry-desc">$l.getDesc()</div>
+          </li>
+        #end
+      </ol>
+
+      <div class="pages">
+        <span class="pages-title">Current Page:</span>
+        #foreach($p in $pages)
+          #if ($curr != $velocityCount)
+            <a href="$p.getLink()">
+              <span class="page-links">$p.getText()</span>
+            </a>
+          #else
+            <span class="page-links page-curr">$p.getText()</span>
+          #end
+          </span>
+        #end
+      </div>
+    </div>
   </body>
 </html>
