@@ -22,23 +22,23 @@ a {
   margin-left: auto;
   margin-right: auto;
   box-shadow: 1px 1px 1px #aaa;
+  min-width: 900px;
 }
 
 .form {
-  text-align: center;
-  padding-right: 100px;
+  padding-left: 291px;
 }
 
 .form-text {
   padding: 0;
-  width: 50%;
+  min-width: 450px;
   font-size: 120%;
 }
 
 .count {
   color: #444;
   font-size: 60%;
-  padding-left: 375px;
+  padding-left: 291px;
 }
 
 .title {
