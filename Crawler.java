@@ -273,7 +273,7 @@ public class Crawler
     public void fetchURL(String urlScanned) {
         try {
             urlScanned = urlScanned.replace("\\", "");
-            Response res = Jsoup.connect(urlScanned).ignoreContentType(false).timeout(3000).execute();
+            Response res = Jsoup.connect(urlScanned).ignoreContentType(false).timeout(6000).execute();
             if (!res.contentType().contains("text/html") && !res.contentType().contains("text/plain")) {
                 System.out.println("==> bad content-type: " + res.contentType());
                 deleteURLInDB(nextURLID-1);
