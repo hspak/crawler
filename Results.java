@@ -6,6 +6,7 @@ import java.util.*;
 
 class Results
 {
+    public List<String> title;
     public List<String> desc;
     public List<String> url;
     public List<String> image;
@@ -15,6 +16,7 @@ class Results
     public int totalCount;
 
     Results() {
+        title = new ArrayList<>();
         desc = new ArrayList<>();
         url = new ArrayList<>();
         image = new ArrayList<>();
@@ -82,8 +84,13 @@ class Results
             System.out.println(query);
             ResultSet result = stat.executeQuery(query);
             while (result.next()) {
+                System.out.println(result.getString("description"));
+                String[] split = result.getString("description").split("\\|");
+                System.out.println(split[0]);
+                System.out.println(split[1]);
                 url.add(result.getString("url"));
-                desc.add(result.getString("description"));
+                desc.add(split[0] + "...");
+                title.add(split[1]);
                 image.add(result.getString("image"));
             }
         } catch (SQLException e) {
@@ -92,6 +99,7 @@ class Results
     }
 
     private void resetLists() {
+        title.clear();
         desc.clear();
         image.clear();
         url.clear();
@@ -110,7 +118,13 @@ class Results
         urlid = setUrlidFromWords(keywords);
         if (urlid != null) {
             totalCount = urlid.size();
-            urlid = urlid.subList(start, start+10);
+            if (totalCount > 10 && start < totalCount) {
+                if (start+10 < totalCount) {
+                    urlid = urlid.subList(start, start+10);
+                } else {
+                    urlid = urlid.subList(start, totalCount);
+                }
+            }
             getUrlidInfo(urlid);
         }
     }

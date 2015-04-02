@@ -68,7 +68,7 @@ public class Crawler
         }
 
         // Create the table
-        stat.executeUpdate("CREATE TABLE urls (urlid INT NOT NULL, url VARCHAR(512), description VARCHAR(200), image VARCHAR(512), PRIMARY KEY(urlid))");
+        stat.executeUpdate("CREATE TABLE urls (urlid INT NOT NULL, url VARCHAR(512), description VARCHAR(275), image VARCHAR(512), PRIMARY KEY(urlid))");
         stat.executeUpdate("CREATE TABLE words (word VARCHAR(100), urlid INT)");
     }
 
@@ -145,7 +145,7 @@ public class Crawler
             Statement stat = connection.createStatement();
             String[] split = desc.split(" ");
             String query = "";
-            HashMap<String, Integer> wordTable = new HashMap<>();
+            Map<String, Integer> wordTable = new HashMap<>();
             for (String w: split) {
                 if (w.length() <= 1) {
                     continue;
@@ -250,7 +250,7 @@ public class Crawler
     }
 
     // fallback = whole body if there is insufficient paragraphs tags
-    public void insertDesc(String desc, String fallback) {
+    public void insertDesc(String title, String desc, String fallback) {
         desc = desc.replaceAll("[^A-Za-z0-9 ]", "");
         int len = desc.length();
         if (len > 200) {
@@ -259,11 +259,20 @@ public class Crawler
             desc = fallback.replaceAll("[^A-Za-z0-9 ]", "");
             if (desc.length() > 200) len = 200;
         }
-        String save = desc.substring(0, len-1);
+
+        title = title.replaceAll("\\|", "");
+        int tLen = title.length();
+        if (tLen > 74) {
+            tLen = 74;
+        }
+        String save = desc.substring(0, len) + "|" + title.substring(0, tLen);
+        System.out.println(save);
         insertDescInDB(nextURLID-1, save);
     }
 
     public void fetchURL(String urlScanned) {
+
+
         try {
             urlScanned = urlScanned.replace("\\", "");
             Response res = Jsoup.connect(urlScanned).ignoreContentType(false).timeout(3000).execute();
@@ -281,7 +290,7 @@ public class Crawler
             // ignore the root link
             if (nextURLID != 0) {
                 insertImage(doc.select("img"));
-                insertDesc(doc.select("p").text(), doc.select("body").text());
+                insertDesc(doc.select("title").text(), doc.select("p").text(), doc.select("body").text());
                 insertWordTable(nextURLID-1, doc.select("body").text());
             }
         } catch (Exception e) {

@@ -18,9 +18,13 @@
       #end
     #end
     #foreach($l in $links)
-      <li>$l.getUrl()</li>
-      <li>$l.getDesc()</li>
-      <li>$l.getImage()</li>
+      <div>
+        $velocityCount
+        <li>$l.getUrl()</li>
+        <li>$l.getTitle()</li>
+        <li>$l.getDesc()</li>
+        <li>$l.getImage()</li>
+      <div>
     #end
   </body>
 </html>

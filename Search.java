@@ -13,7 +13,7 @@ public class Search {
     public static class Page {
         private String link;
         private String text;
-        
+
         public Page(String link, String text) {
             this.link = link;
             this.text = text;
@@ -29,17 +29,22 @@ public class Search {
 
     public static class Link {
         private String url;
+        private String title;
         private String desc;
         private String image;
 
-        public Link(String url, String desc, String image) {
+        public Link(String url, String title, String desc, String image) {
             this.url = url;
+            this.title = title;
             this.desc = desc;
             this.image = image;
         }
 
         public String getUrl() {
             return url;
+        }
+        public String getTitle() {
+            return title;
         }
         public String getDesc() {
             return desc;
@@ -70,7 +75,7 @@ public class Search {
                 if (r.image.get(i) != null) {
                     imageURL = r.image.get(i);
                 }
-                links.add(new Link(r.url.get(i), r.desc.get(i), imageURL));
+                links.add(new Link(r.url.get(i), r.title.get(i), r.desc.get(i), imageURL));
             }
 
             // logic for pagination
@@ -83,10 +88,14 @@ public class Search {
             } else if (start < 100) {
                 start = 0;
             }
-            for (int i = 0; i < 10; i++) {
-                pageLink = "/search?start=" + Integer.toString(start) + "&keywords=" + keywords;
-                pages.add(new Page(pageLink, Integer.toString(start/10 + 1)));
-                start += 10;
+
+            if (r.totalCount > 10) {
+                for (int i = 0; i <= r.totalCount/10; i++) {
+                    if (i == 10) break;
+                    pageLink = "/search?start=" + Integer.toString(start) + "&keywords=" + keywords;
+                    pages.add(new Page(pageLink, Integer.toString(start/10 + 1)));
+                    start += 10;
+                }
             }
 
             // send data to template
