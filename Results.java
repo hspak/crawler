@@ -119,14 +119,16 @@ class Results
         urlid = setUrlidFromWords(keywords);
         if (urlid != null) {
             totalCount = urlid.size();
-            if (totalCount > 10 && start < totalCount) {
-                if (start+10 < totalCount) {
-                    urlid = urlid.subList(start, start+10);
-                } else {
-                    urlid = urlid.subList(start, totalCount);
+            if (totalCount > start) {
+                if (totalCount > 10) {
+                    if (start+10 < totalCount) {
+                        urlid = urlid.subList(start, start+10);
+                    } else {
+                        urlid = urlid.subList(start, totalCount);
+                    }
                 }
+                getUrlidInfo(urlid);
             }
-            getUrlidInfo(urlid);
         }
     }
 }

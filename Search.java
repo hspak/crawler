@@ -84,14 +84,14 @@ public class Search {
             int origStart = start/10;
             List<Page> pages = new ArrayList<>();
             String pageLink = "";
-            if (start > 50) {
+            if (start > 50 && r.totalCount > 100) {
                 start -= 50;
                 origStart = 5;
             } else if (start < 100) {
                 start = 0;
             }
 
-            if (r.totalCount > 10) {
+            if (r.totalCount > 10 && start < r.totalCount) {
                 for (int i = 0; i <= r.totalCount/10; i++) {
                     if (i == 10) break;
                     pageLink = "/search?start=" + Integer.toString(start) + "&keywords=" + keywords;
