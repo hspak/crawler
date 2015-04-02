@@ -267,7 +267,6 @@ public class Crawler
             tLen = 74;
         }
         String save = desc.substring(0, len) + "|" + title.substring(0, tLen);
-        System.out.println(save);
         insertDescInDB(nextURLID-1, save);
     }
 
