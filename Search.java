@@ -70,10 +70,12 @@ public class Search {
 
             // generate data structure to send to template
             List<Link> links = new ArrayList<>();
-            String imageURL = "http://upload.wikimedia.org/wikipedia/commons/9/91/Arabic_Question_mark_%28RTL%29.svg";
+            String imageURL = "";
             for (int i = 0; i < r.url.size(); i++) {
                 if (r.image.get(i) != null) {
                     imageURL = r.image.get(i);
+                } else {
+                    imageURL = "http://upload.wikimedia.org/wikipedia/commons/9/91/Arabic_Question_mark_%28RTL%29.svg";
                 }
                 links.add(new Link(r.url.get(i), r.title.get(i), r.desc.get(i), imageURL));
             }

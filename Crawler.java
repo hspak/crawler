@@ -272,8 +272,6 @@ public class Crawler
     }
 
     public void fetchURL(String urlScanned) {
-
-
         try {
             urlScanned = urlScanned.replace("\\", "");
             Response res = Jsoup.connect(urlScanned).ignoreContentType(false).timeout(3000).execute();
