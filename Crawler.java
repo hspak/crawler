@@ -261,6 +261,7 @@ public class Crawler
         }
 
         title = title.replaceAll("\\|", "");
+        title = title.replaceAll("'", "\\'");
         int tLen = title.length();
         if (tLen > 74) {
             tLen = 74;
