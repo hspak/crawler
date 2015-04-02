@@ -7,12 +7,14 @@
   </head>
   <body>
       <div class="header">
-        <div class="title">Purdue CS Search</div>
+        <a href="/">
+          <div class="title">Purdue CS Search</div>
+        </a>
         <div class="form">
           <form action="search">
             <input type="hidden" value="0" name="start"></input>
             <input class="form-text" type="text" name="keywords"></input>
-            <input class="form-submit" type="submit" value="search"></input>
+            <input type="submit" value="search"></input>
           </form>
         </div>
         <div class="count">Found $count links</div>
