@@ -58,6 +58,7 @@ public class Search {
         Results r = new Results();
         r.connectDB();
         staticFileLocation("/public");
+        port(9856);
 
         get("/search", (req, res) -> {
             String keywords = req.queryParams("keywords");
