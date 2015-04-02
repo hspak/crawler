@@ -13,7 +13,7 @@
         <div class="form">
           <form action="search">
             <input type="hidden" value="0" name="start"></input>
-            <input class="form-text" type="text" name="keywords"></input>
+            <input class="form-text" type="text" name="keywords" value="$keywords"></input>
             <input type="submit" value="search"></input>
           </form>
         </div>

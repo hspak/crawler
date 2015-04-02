@@ -106,6 +106,7 @@ public class Search {
             model.put("links", links);
             model.put("count", r.totalCount);
             model.put("pages", pages);
+            model.put("keywords", keywords);
             model.put("curr", origStart+1);
             return new ModelAndView(model, "template/search.wm");
         }, new VelocityTemplateEngine());
